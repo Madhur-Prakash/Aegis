@@ -22,7 +22,11 @@ const DICTIONARIES: Record<Locale, Dictionary> = {
   hi: hi as unknown as Dictionary,
 };
 
-export const LOCALE_KEY = "aegis-locale";
+import { LOCALE_KEY } from "@/lib/storage-keys";
+
+// Re-exported so existing call sites keep importing it from here, while the
+// single definition lives in a module a Server Component can also read.
+export { LOCALE_KEY };
 
 type Ctx = {
   locale: Locale;

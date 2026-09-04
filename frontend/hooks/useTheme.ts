@@ -8,7 +8,11 @@
 import { useCallback, useEffect, useState } from "react";
 
 export type Theme = "system" | "light" | "dark";
-export const THEME_KEY = "aegis-theme";
+import { THEME_KEY } from "@/lib/storage-keys";
+
+// Re-exported so existing call sites keep importing it from here, while the
+// single definition lives in a module a Server Component can also read.
+export { THEME_KEY };
 
 function apply(theme: Theme) {
   const root = document.documentElement;

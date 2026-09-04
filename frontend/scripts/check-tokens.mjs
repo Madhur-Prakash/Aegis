@@ -57,6 +57,16 @@ const RULES = [
  */
 const EXEMPT = /tokens-allow:/;
 
+/**
+ * A comment line. A comment that *names* a forbidden colour in order to explain
+ * why it is forbidden is documentation, not a usage -- and flagging it would
+ * push the next person to delete the explanation instead of keeping it.
+ *
+ * Only whole-line comments are skipped: a hex in a trailing comment beside real
+ * code still gets reported, which is the case where it might actually be live.
+ */
+const COMMENT_LINE = /^\s*(?:\/\/|\/\*|\*|<!--)/;
+
 const walk = (dir, out = []) => {
   for (const entry of readdirSync(dir)) {
     const path = join(dir, entry);
@@ -86,6 +96,7 @@ for (const file of files) {
   const lines = readFileSync(file, "utf8").split(/\r?\n/);
   lines.forEach((line, index) => {
     if (EXEMPT.test(line)) return;
+    if (COMMENT_LINE.test(line)) return;
     for (const rule of RULES) {
       rule.pattern.lastIndex = 0;
       const found = line.match(rule.pattern);

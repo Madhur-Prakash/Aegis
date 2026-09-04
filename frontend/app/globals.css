@@ -67,6 +67,18 @@
   min-height: 100svh;
   display: flex;
   flex-direction: column;
+  /* The page must never scroll sideways, and one thing inside it is
+     deliberately wider than it is: the inverting disc's overlay bleeds a full
+     radius past the headline on every side so the circle stays a circle at the
+     edges of a line.  Measured, that bled 38px at 1440 and 90px at 375 into the
+     document's scroll width.
+
+     `clip` rather than `hidden`: `hidden` on one axis forces the other to
+     `auto`, which would make this a scroll container -- and the sticky nav and
+     the pinned hero both resolve against the viewport, so they would stop
+     working.  `clip` clips without scrolling and leaves the vertical axis
+     visible, so the disc still bleeds above and below the type. */
+  overflow-x: clip;
 }
 
 .container {
@@ -133,7 +145,45 @@
   flex: 1 1 auto;
 }
 
+/* ── Peer hover: one gesture, everywhere ────────────────────────── */
+/* The item under the pointer grows and takes full contrast; its peers shrink a
+   hair and recede.  Headline words, grid rows, metric cells, footer links and
+   nav items all use it, which is why it is three rules and three custom
+   properties rather than five near-identical hover blocks.
+
+   The amounts are tunable per context because a 12px footer link and a 141px
+   headline word cannot grow by the same factor and still read as the same
+   gesture.  `usePeerHover` decides *whether* it runs -- never on touch, never
+   under reduced motion -- so nothing here needs a media query.
+
+   `data-peer` never goes on an element Framer animates: an inline transform
+   beats a stylesheet, so the rule would silently do nothing. */
+[data-peer] {
+  --peer-grow: 1.04;
+  --peer-shrink: 0.99;
+  --peer-recede: 0.45;
+  transform-origin: 0% 50%;
+  transition:
+    transform var(--d-base) ease,
+    color var(--d-fast) ease,
+    opacity var(--d-base) ease;
+}
+
+[data-peer="on"] {
+  transform: scale(var(--peer-grow));
+  color: var(--fg-display);
+}
+
+[data-peer="off"] {
+  transform: scale(var(--peer-shrink));
+  opacity: var(--peer-recede);
+}
+
 /* ── Navigation ─────────────────────────────────────────────────────────── */
+/* At rest the bar is not there: no ground, no border, no blur, and the metadata
+   at half strength. It earns its presence only once the page has moved under
+   it -- a chrome-coloured strip sitting over a 144px headline is the fastest way
+   to make an editorial page look like an app. */
 .nav {
   position: sticky;
   top: 0;
@@ -143,9 +193,30 @@
   align-items: center;
   gap: var(--sp-4);
   padding-inline: var(--gutter);
-  background: color-mix(in oklab, var(--bg) 82%, transparent);
-  backdrop-filter: blur(12px);
-  border-bottom: var(--hairline);
+  background: transparent;
+  border-bottom: 1px solid transparent;
+  transition:
+    background var(--d-base) ease,
+    border-color var(--d-base) ease,
+    backdrop-filter var(--d-base) ease;
+}
+
+.nav[data-scrolled="true"] {
+  background: color-mix(in oklab, var(--bg) 72%, transparent);
+  backdrop-filter: blur(14px);
+  border-bottom-color: var(--line-1);
+}
+
+/* The rail and provider labels are reference material, not navigation. They sit
+   back until the pointer is in the bar. */
+.nav-meta {
+  opacity: 0.45;
+  transition: opacity var(--d-base) ease;
+}
+
+.nav:hover .nav-meta,
+.nav:focus-within .nav-meta {
+  opacity: 1;
 }
 
 .nav-brand {
@@ -187,12 +258,42 @@
   color: var(--fg-display);
 }
 
+/* The bar does not resize its own contents.  A 56px strip whose items grow
+   under the pointer is the opposite of subtle, so here the gesture is contrast
+   alone: the item considered comes forward, the rest step back. */
+.nav-link[data-peer] {
+  --peer-grow: 1;
+  --peer-shrink: 1;
+  --peer-recede: 0.5;
+}
+
+/* `--ink-600` rather than `--ink-700`: at 700 the bar is one step from the
+   canvas in both themes and effectively invisible on the light one, which made
+   the sliding indicator look broken rather than quiet. */
 .nav-bar {
   position: absolute;
   inset: 0;
-  background: var(--ink-700);
+  background: var(--ink-600);
   border-radius: var(--r-sm);
   z-index: -1;
+}
+
+/* Sign in / sign out is a word in a 44px square, so it wrapped to two lines.
+   It keeps the 44px target height and takes the width it needs.  Two classes
+   again: `.icon-btn` sets `width: 44px` later in this file. */
+.icon-btn.nav-auth,
+.nav-link.nav-auth {
+  width: auto;
+  padding-inline: var(--sp-3);
+  white-space: nowrap;
+}
+
+/* Two metadata labels ran together as one string -- "RAIL SIMULATED AI
+   FIXTURE".  A separator is all they needed. */
+.nav-meta + .nav-meta::before {
+  content: "·";
+  margin-right: var(--sp-2);
+  color: var(--fg-micro);
 }
 
 .nav-right {
@@ -216,7 +317,11 @@
   border: 1px solid var(--sig-unverified-edge);
 }
 
-.nav-mobile-toggle {
+/* Two classes, not one: `.icon-btn` is declared later in this file and also
+   sets `display`, so at equal specificity it won.  Measured at 1440px the
+   hamburger was `display: grid`, 44px wide -- a mobile-only control sitting on
+   the end of the desktop bar. */
+.icon-btn.nav-mobile-toggle {
   display: none;
 }
 
@@ -224,8 +329,17 @@
   .nav-links {
     display: none;
   }
-  .nav-mobile-toggle {
-    display: inline-flex;
+  .icon-btn.nav-mobile-toggle {
+    display: inline-grid;
+  }
+  /* The right cluster was 329px wide at 375px, which pushed the hamburger past
+     the edge of the viewport: the mobile menu was literally unreachable, and it
+     was the only thing making the page scroll sideways. The rail and provider
+     labels are metadata the footer already carries, and the auth action moves
+     into the sheet, so the bar keeps only what a phone needs. */
+  .nav-meta,
+  .nav-auth {
+    display: none;
   }
 }
 
@@ -583,6 +697,7 @@
 }
 
 .icon-btn {
+  position: relative;
   display: inline-grid;
   place-items: center;
   width: 44px;
@@ -596,6 +711,17 @@
     background var(--d-fast) ease,
     color var(--d-fast) ease;
 }
+/* A badge on an icon button is a badge, not a second row.  `place-items:
+   center` in a one-cell grid gave the count its own track: measured, the glyph
+   sat at y=6 and the count at y=30 inside a 44px button, which read as two
+   stacked things rather than one counted icon.  The badge inside a `.nav-link`
+   stays in the text flow, where it belongs. */
+.icon-btn > .nav-badge {
+  position: absolute;
+  top: 2px;
+  right: 0;
+}
+
 .icon-btn:hover {
   background: var(--ink-700);
   color: var(--fg);
@@ -1439,6 +1565,24 @@
   color: var(--fg-display);
 }
 
+/* The closing section is centred, so it grows from its middle -- the page-wide
+   default grows from the left edge, which would slide a centred line sideways.
+   The growth is small because the line is already the largest type on the
+   page. */
+.cta-line[data-peer] {
+  --peer-grow: 1.03;
+  --peer-shrink: 1;
+  --peer-recede: 1;
+  transform-origin: 50% 50%;
+}
+
+.cta-meta[data-peer] {
+  --peer-grow: 1;
+  --peer-shrink: 1;
+  --peer-recede: 0.4;
+  transform-origin: 50% 50%;
+}
+
 /* ── Cursor (ui/04 §1) ──────────────────────────────────────────────────── */
 .cursor {
   position: fixed;
@@ -1532,4 +1676,528 @@
   .cockpit {
     grid-template-columns: 1fr;
   }
+}
+
+/* ── Editorial composition (ui/02 §6, references A4 / B4 / D4) ──────────── */
+/* The section opener: rule, index labels, headline, paragraph. Same order in
+   every section, which is what makes the page read as composed. */
+.opener {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-5);
+  padding-bottom: var(--sp-7);
+}
+
+.opener-rule {
+  width: 100%;
+}
+
+.opener-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--sp-4);
+}
+
+.opener-title {
+  max-width: 22ch;
+}
+
+@media (min-width: 1024px) {
+  .opener-title {
+    max-width: 30ch;
+  }
+}
+
+/* An inline chip inside the headline's text flow (ui/00 §2.4). Sized in `em` so
+   it scales with the display type it sits in, and never more than one. */
+.headline-chip {
+  display: inline-flex;
+  align-items: center;
+  height: 0.72em;
+  padding: 0 0.5em;
+  border: 1px solid;
+  border-radius: var(--r-full);
+  font-size: 0.34em;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  vertical-align: 0.06em;
+  white-space: nowrap;
+  text-transform: uppercase;
+}
+
+/* ── The dense micro-grid (reference B4) ────────────────────────────────── */
+/* Four columns on hairline rows. No cards: B4 reads as serious precisely
+   because it is rules and labels rather than boxes. */
+.microgrid {
+  display: flex;
+  flex-direction: column;
+}
+
+.microgrid-head,
+.microgrid-cells {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr) auto minmax(0, 1.6fr);
+  gap: var(--sp-4);
+  align-items: baseline;
+}
+
+.microgrid-row {
+  position: relative;
+  border-top: var(--hairline);
+}
+
+.microgrid-cells {
+  position: relative;
+  z-index: 1;
+  padding: var(--sp-3) var(--sp-3);
+}
+
+/* The row enlarges about its own centre, so it grows into the gutter on both
+   sides rather than pushing its right-hand column off the measure. 1.8% was
+   too small to read as growth at all; 5% is the most the gutter can absorb --
+   measured, a 1296px row at 1440 reaches 1400px, still inside the viewport,
+   and the gutter only gets proportionally wider as the page narrows. */
+.microgrid-cells[data-peer] {
+  --peer-grow: 1.05;
+  --peer-shrink: 0.995;
+  --peer-recede: 0.5;
+  transform-origin: 50% 50%;
+}
+
+/* Reference C4: the hovered row inverts against a filled bar. */
+.microgrid-bar {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: var(--bone-100);
+  border-radius: var(--r-sm);
+}
+
+/* Against the filled bar the whole row has to invert, including the columns
+   that carry their own colour -- one grey cell left behind on a light bar is
+   the tell that this was a background swap rather than an inversion. */
+.microgrid-cells[data-peer="on"] .microgrid-name,
+.microgrid-cells[data-peer="on"] .microgrid-kind,
+.microgrid-cells[data-peer="on"] .microgrid-index,
+.microgrid-cells[data-peer="on"] .microgrid-detail {
+  color: var(--ink-900);
+}
+
+.microgrid-head {
+  border-top: 0;
+  padding: 0 var(--sp-3) var(--sp-2);
+}
+
+.microgrid-row:last-child {
+  border-bottom: var(--hairline);
+}
+
+.microgrid-name {
+  color: var(--fg-display);
+}
+
+.microgrid-kind {
+  color: var(--fg-secondary);
+}
+
+.microgrid-index {
+  color: var(--fg-micro);
+  font-variant-numeric: tabular-nums;
+}
+
+.microgrid-detail,
+.microgrid-right {
+  text-align: right;
+  white-space: normal;
+  color: var(--fg-secondary);
+}
+
+@media (max-width: 767px) {
+  .microgrid-head {
+    display: none;
+  }
+  .microgrid-cells {
+    grid-template-columns: 1fr auto;
+    gap: var(--sp-1) var(--sp-3);
+  }
+  .microgrid-kind {
+    grid-column: 1;
+  }
+  .microgrid-detail {
+    grid-column: 1 / -1;
+    text-align: left;
+  }
+}
+
+/* ── Scroll-linked display type ─────────────────────────────────────────── */
+/* Deliberately wider than the viewport and clipped by it. The parent hides the
+   overflow so the page itself never scrolls sideways. */
+.scrolltype {
+  overflow: hidden;
+  padding-block: var(--sp-6);
+  margin-inline: calc(var(--gutter) * -1);
+}
+
+.scrolltype-line {
+  display: block;
+  white-space: nowrap;
+  font: 900 clamp(4rem, 18vw, 15rem) / 0.86 var(--font-display);
+  letter-spacing: var(--tr-display-1);
+  will-change: transform;
+}
+
+.scrolltype-line--solid {
+  color: var(--fg-display);
+}
+.scrolltype-line--muted {
+  color: var(--ink-600);
+}
+/* Outlined, so an enormous word can sit behind content without shouting. */
+.scrolltype-line--outline {
+  color: transparent;
+  -webkit-text-stroke: 1px var(--line-2);
+  transition:
+    color var(--d-slow) ease,
+    -webkit-text-stroke-color var(--d-base) ease;
+}
+
+/* Under the pointer the outline fills and the stroke comes up a step, so the
+   word resolves from a wireframe into a plane.
+   Colour only: the line carries an inline `x` from the scroll link, and a CSS
+   transform on the same element would simply be overwritten by it.
+
+   `--line-1` rather than `--ink-600` for the fill: it is the first neutral step
+   that is actually visible against the canvas in *both* themes. `--ink-600`
+   sits three points off bone, and the light theme showed almost nothing. It is
+   a hairline token used as a surface, which is unusual -- but it is a neutral
+   step on the same ink scale, and this is 15rem of type: anything stronger
+   stops being a backdrop and starts competing with the headline above it. */
+.scrolltype:hover .scrolltype-line--outline,
+.scrolltype:focus-within .scrolltype-line--outline {
+  color: var(--line-1);
+  -webkit-text-stroke-color: var(--fg-micro);
+}
+
+/* ── Pull quote ─────────────────────────────────────────────────────────── */
+.pullquote {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  max-width: 60ch;
+  margin: 0;
+  padding-left: var(--sp-5);
+  border-left: 2px solid var(--sig-unverified-edge);
+}
+
+.pullquote p {
+  margin: 0;
+  font: 500 var(--fs-display-3) / var(--lh-display-3) var(--font-display);
+  letter-spacing: var(--tr-display-3);
+  color: var(--fg-display);
+}
+
+/* ── Measured-proof strip ───────────────────────────────────────────────── */
+.proofstrip {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: var(--grid-gap);
+  padding-block: var(--sp-6);
+}
+
+.float {
+  will-change: transform;
+}
+
+.proofcell {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  padding-block: var(--sp-4);
+  border-top: var(--hairline);
+}
+
+/* The cells already drift on their own, so the hover has to be legible against
+   that: a little more growth than a grid row, and the label brightens with the
+   figure rather than staying at micro strength. */
+.proofcell[data-peer] {
+  --peer-grow: 1.05;
+  --peer-shrink: 0.985;
+}
+
+.proofcell[data-peer="on"] .nano {
+  color: var(--fg-secondary);
+}
+
+.proofcell-v {
+  font: 500 var(--fs-display-3) / 1 var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--fg-display);
+}
+
+.proof-note {
+  padding-top: var(--sp-4);
+}
+
+.hero-rule {
+  width: 100%;
+  margin-top: var(--sp-6);
+}
+
+.hero-cta {
+  padding-top: var(--sp-3);
+}
+
+.hero-measured {
+  padding-top: var(--sp-3);
+}
+
+.cta-corner {
+  position: absolute;
+  inset: var(--sp-6) var(--gutter) auto;
+}
+
+/* ── Footer as a composition (reference D4) ─────────────────────────────── */
+.foot {
+  background: var(--bg-raised);
+  border-top: var(--hairline);
+  padding-block: var(--section) var(--sp-6);
+  margin-top: var(--section);
+}
+
+.foot-statement {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--grid-gap);
+  align-items: start;
+  padding-block: var(--sp-7);
+}
+
+.foot-line {
+  margin: 0;
+  max-width: 26ch;
+  font: 900 var(--fs-display-2) / var(--lh-display-2) var(--font-display);
+  letter-spacing: var(--tr-display-2);
+}
+
+/* The oversized mark, opposite the statement -- D4's rhythm exactly. */
+.foot-mark {
+  display: inline-flex;
+  align-items: flex-start;
+  color: var(--ink-600);
+  line-height: 0.8;
+}
+
+.foot-mark-reg {
+  font: 400 clamp(2rem, 5vw, 4rem) / 1 var(--font-display);
+}
+
+.foot-mark-year {
+  font: 900 clamp(4rem, 13vw, 11rem) / 0.8 var(--font-display);
+  letter-spacing: var(--tr-display-1);
+  font-variant-numeric: tabular-nums;
+}
+
+.foot-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) repeat(3, minmax(0, 1fr));
+  gap: var(--grid-gap);
+  padding-block: var(--sp-7);
+}
+
+.foot-brand {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+.foot-brand-name {
+  font: 900 var(--fs-h4) / 1 var(--font-display);
+  letter-spacing: 0.08em;
+  color: var(--fg-display);
+}
+
+.foot-col {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+
+.foot-col ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+/* The underline expands from the left rather than appearing (ui/04). */
+.foot-link {
+  color: var(--fg-secondary);
+  font-size: var(--fs-sm);
+  text-decoration: none;
+  background-image: linear-gradient(var(--bone-100), var(--bone-100));
+  background-repeat: no-repeat;
+  background-position: 0 100%;
+  background-size: 0% 1px;
+  transition: background-size var(--d-base) ease, color var(--d-fast) ease;
+}
+
+.foot-link:hover,
+.foot-link:focus-visible,
+.foot-link[data-peer="on"] {
+  color: var(--fg-display);
+  background-size: 100% 1px;
+}
+
+/* Nine links across three columns, one group: at this size the growth is the
+   only thing that reads, so it is the largest on the page. */
+.foot-link[data-peer] {
+  --peer-grow: 1.07;
+  --peer-shrink: 1;
+  --peer-recede: 0.5;
+  display: inline-block;
+}
+
+.foot-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2) var(--sp-5);
+  padding-top: var(--sp-5);
+}
+
+.foot-meta-checks {
+  flex: 1 1 100%;
+}
+
+@media (max-width: 767px) {
+  .foot-statement {
+    grid-template-columns: 1fr;
+  }
+  .foot-columns {
+    grid-template-columns: 1fr 1fr;
+  }
+  .scrolltype {
+    padding-block: var(--sp-5);
+  }
+}
+/* A value still loading: the label and the row height are already correct, so
+   only the figure changes when the fetch lands. */
+.stat-v--pending {
+  color: var(--fg-micro);
+}
+/* The lattice drifts against the type as the hero is occluded, so the two
+   layers separate instead of leaving together. */
+.hero-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  will-change: transform;
+}
+/* A headline word. The outer element owns the hover (transform + colour) so it
+   never competes with the Framer variant animating the reveal on the inner one. */
+.hword {
+  display: inline-block;
+  margin-right: 0.26em;
+  transform-origin: 50% 100%;
+  transition:
+    transform var(--d-base) ease,
+    color var(--d-fast) ease;
+}
+
+/* Display type grows from its own baseline, not from the left edge of the line,
+   or the words drift sideways as they scale. */
+.hword[data-peer] {
+  --peer-grow: 1.06;
+  --peer-shrink: 0.985;
+  transform-origin: 50% 100%;
+}
+
+/* Here the recede is a colour, not an opacity.  The inverting disc renders a
+   duplicate of these words in the canvas colour, and a half-transparent
+   duplicate over the filled disc turns grey -- which looks like a rendering
+   fault rather than a receding word. */
+.hword[data-peer="off"] {
+  opacity: 1;
+  color: var(--fg-secondary);
+}
+/* The sheet's auth action, styled as one of its links rather than a button. */
+.sheet-action {
+  border: 0;
+  background: none;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+/* ── Pointer inversion (the disc that flips the type it crosses) ─────────── */
+/* The disc is a *lens*, not a mirror of the theme.
+   It is always the bright ground carrying dark type: on the dark canvas that
+   reads as an inversion, and on the light one as a spotlight -- the muted words
+   inside it come up to full contrast on white while the page around stays bone.
+   A strict inversion would make it near-black there, which on a light editorial
+   page reads as a hole punched through the headline rather than a lens over it.
+
+   Neither token below is literally white or literally dark in both themes --
+   the palette flips wholesale in `tokens.css`, which is copied verbatim -- so
+   the pair is chosen per theme here. */
+:root {
+  --disc-ground: var(--white);
+  --disc-ink: var(--ink-900);
+}
+
+:root[data-theme="light"] {
+  --disc-ground: var(--ink-800);
+  --disc-ink: var(--white);
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]):not([data-theme="light"]) {
+    --disc-ground: var(--ink-800);
+    --disc-ink: var(--white);
+  }
+}
+
+.invert-host {
+  position: relative;
+}
+
+/* The duplicate layer, in the inverted palette, clipped to a circle at the
+   pointer. Same markup as the layer beneath, so the two cannot fall out of
+   register; `inset: 0` and no layout of its own means it cannot shift the page. */
+.invert-layer {
+  position: absolute;
+  z-index: 2;
+  pointer-events: none;
+  background: var(--disc-ground);
+  will-change: clip-path;
+}
+
+/* The lens rim: a hairline circle following the same springs as the clip, so
+   the disc has an edge even when its ground matches the surface it is over. */
+.invert-rim {
+  position: absolute;
+  z-index: 3;
+  pointer-events: none;
+  border: 1px solid var(--line-1);
+  border-radius: 50%;
+}
+
+/* Inside the disc every word takes the disc's ink -- including the muted ones,
+   which would otherwise stay grey and break the illusion. */
+.invert-layer,
+.invert-layer .w-solid,
+.invert-layer .w-muted,
+.invert-layer .hword {
+  color: var(--disc-ink);
+}
+
+/* The chip inverts too, or it floats as a bright island inside the disc. */
+.invert-layer .headline-chip {
+  color: var(--disc-ink);
+  background: transparent;
+  border-color: var(--disc-ink);
 }

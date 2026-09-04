@@ -10,8 +10,23 @@
 import { motion } from "motion/react";
 import type { ReactNode } from "react";
 
-import { blurUp, chipPop, dropIn, flipWord, inView, pick, slatUp, SLAT_COLUMNS, D, E } from "@/design/motion";
+import {
+  blurUp,
+  chipPop,
+  dropIn,
+  flipWord,
+  inView,
+  pick,
+  slatUp,
+  SLAT_COLUMNS,
+  D,
+  E,
+} from "@/design/motion";
+import { useState } from "react";
+
 import { useReducedMotion } from "@/hooks/useReducedMotion";
+import { useIsDuplicate } from "@/hooks/useDuplicate";
+import { usePeerHover } from "@/hooks/usePeerHover";
 
 type Variant = "dropIn" | "blurUp" | "chipPop";
 
@@ -34,14 +49,16 @@ export function Reveal({
   style?: React.CSSProperties;
 }) {
   const reduced = useReducedMotion();
+  const duplicate = useIsDuplicate();
   const Component = motion[as];
   return (
     <Component
       custom={index}
       variants={pick(VARIANTS[variant], reduced)}
-      initial="hidden"
-      whileInView="show"
-      viewport={inView}
+      // A decorative duplicate is already there; only the real one arrives.
+      initial={duplicate ? "show" : "hidden"}
+      whileInView={duplicate ? undefined : "show"}
+      viewport={duplicate ? undefined : inView}
       className={className}
       style={style}
     >
@@ -59,45 +76,96 @@ export function FlipHeadline({
   lines,
   className = "display-1",
   perspective = 800,
+  trailing,
+  interactive = false,
+  as = "h1",
 }: {
   lines: { text: string; tone: "solid" | "muted" }[][];
   className?: string;
   perspective?: number;
+  /** Rendered inside the final line, in the text flow -- this is where an
+   *  inline headline chip goes (ui/00 §2.4). Never more than one. */
+  trailing?: ReactNode;
+  /**
+   * Per-word hover: the word under the pointer grows and takes the canvas's
+   * maximum-contrast colour while its neighbours recede.
+   *
+   * Contrast is `--fg-display` -- white on the dark canvas, near-black on the
+   * light one -- so "contrasting with the background" holds in both themes
+   * without naming a colour.
+   */
+  interactive?: boolean;
+  as?: "h1" | "h2";
 }) {
   const reduced = useReducedMotion();
+  const duplicate = useIsDuplicate();
+  // One mechanism for every hover on the page: the word under the pointer grows
+  // and takes full contrast, its neighbours shrink a hair and recede.  See
+  // `usePeerHover`.
+  const peers = usePeerHover();
+  const live = interactive && peers.live;
   const v = pick(flipWord, reduced);
   let i = 0; // continuous index across all lines: restarting per line breaks the rhythm
+
+  // The reveal is driven from the headline, not from each word.
+  //
+  // Each word used to carry its own `whileInView`, and every section headline
+  // stayed invisible because of it: `flipWord`'s hidden state is
+  // `rotateX: -92deg`, which collapses the word's transformed box to roughly
+  // zero area, and IntersectionObserver divides intersection area by that box
+  // -- so the ratio could never reach `amount: 0.25` and the observer never
+  // fired. The headline itself is untransformed, so observing it works, and the
+  // variant label propagates down to the words, each still resolving its own
+  // stagger from `custom`. It is also four observers fewer per headline.
+  const Tag = as === "h2" ? motion.h2 : motion.h1;
+
   return (
-    <h1 className={className} style={{ perspective }}>
+    <Tag
+      className={className}
+      style={{ perspective }}
+      initial={duplicate ? "show" : "hidden"}
+      whileInView={duplicate ? undefined : "show"}
+      viewport={duplicate ? undefined : inView}
+      {...(live ? peers.group : {})}
+    >
       {lines.map((line, li) => (
         <span
           key={li}
           style={{ display: "block", overflow: "hidden", paddingBottom: ".06em" }}
         >
-          {line.map((word) => (
-            <motion.span
-              key={i}
-              custom={i++}
-              variants={v}
-              initial="hidden"
-              whileInView="show"
-              viewport={inView}
-              className={word.tone === "solid" ? "w-solid" : "w-muted"}
-              style={{
-                display: "inline-block",
-                transformOrigin: "50% 100%",
-                marginRight: ".26em",
-                willChange: "transform",
-              }}
-            >
-              {word.text}
-            </motion.span>
-          ))}
+          {line.map((word) => {
+            const index = i++;
+            return (
+              /* Two elements on purpose: the inner one is the reveal (a Framer
+                 variant animating transform), the outer one is the hover (a CSS
+                 transition on transform and colour). One element cannot own two
+                 competing transforms. */
+              <span
+                key={index}
+                className={`hword ${word.tone === "solid" ? "w-solid" : "w-muted"}`}
+                {...(live ? peers.peer(String(index)) : {})}
+              >
+                <motion.span
+                  custom={index}
+                  variants={v}
+                  style={{
+                    display: "inline-block",
+                    transformOrigin: "50% 100%",
+                    willChange: "transform",
+                  }}
+                >
+                  {word.text}
+                </motion.span>
+              </span>
+            );
+          })}
+          {trailing && li === lines.length - 1 ? trailing : null}
         </span>
       ))}
-    </h1>
+    </Tag>
   );
 }
+
 
 /**
  * Per-line soft rise.  Lines are split on a literal " / " at write time, never
@@ -112,6 +180,7 @@ export function BlurLines({
   className?: string;
 }) {
   const reduced = useReducedMotion();
+  const duplicate = useIsDuplicate();
   const v = pick(blurUp, reduced);
   const lines = children.split(" / ");
   return (
@@ -121,9 +190,9 @@ export function BlurLines({
           key={i}
           custom={i}
           variants={v}
-          initial="hidden"
-          whileInView="show"
-          viewport={inView}
+          initial={duplicate ? "show" : "hidden"}
+          whileInView={duplicate ? undefined : "show"}
+          viewport={duplicate ? undefined : inView}
           style={{ display: "block" }}
         >
           {line}
@@ -136,7 +205,8 @@ export function BlurLines({
 /** A hairline rule draws from the left.  A rule that fades looks like a mistake. */
 export function Rule({ className = "" }: { className?: string }) {
   const reduced = useReducedMotion();
-  if (reduced) return <hr className={`rule ${className}`} />;
+  const duplicate = useIsDuplicate();
+  if (reduced || duplicate) return <hr className={`rule ${className}`} />;
   return (
     <motion.hr
       className={`rule ${className}`}
@@ -150,13 +220,20 @@ export function Rule({ className = "" }: { className?: string }) {
 }
 
 /**
- * The column-mask backdrop (ui/02 §4).  Unmounts its masks on completion, and
- * uses fewer columns on narrow screens.
+ * The column-mask backdrop (ui/02 §4).
+ *
+ * The slats are *masks*: they rise to reveal what is behind them and then they
+ * must go away.  Left mounted they are simply opaque bars sitting on the hero -
+ * and because `--ink-800` is `#FFFFFF` in the light theme, that read as a solid
+ * white panel with a hard edge where the container ended.  They now unmount
+ * when the last column finishes, which is what the docstring always claimed.
  */
 export function SlatBackdrop({ columns }: { columns?: number }) {
   const reduced = useReducedMotion();
+  const [done, setDone] = useState(false);
   const count = columns ?? SLAT_COLUMNS;
-  if (reduced) return null;
+
+  if (reduced || done) return null;
   return (
     <div className="slat-wrap" aria-hidden style={{ ["--slats" as string]: count }}>
       {Array.from({ length: count }).map((_, i) => (
@@ -167,6 +244,9 @@ export function SlatBackdrop({ columns }: { columns?: number }) {
           initial="hidden"
           animate="show"
           className="slat"
+          // The final column owns the unmount, so it fires once rather than
+          // `count` times.
+          onAnimationComplete={i === count - 1 ? () => setDone(true) : undefined}
         />
       ))}
     </div>

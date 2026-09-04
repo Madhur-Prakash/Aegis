@@ -2,8 +2,10 @@ import type { Metadata, Viewport } from "next";
 
 import { AppProviders } from "@/components/domain/AppProviders";
 import { BRAND_THEME_COLOR } from "@/design/brand";
-import { THEME_KEY } from "@/hooks/useTheme";
-import { LOCALE_KEY } from "@/lib/i18n";
+// Plain constants, not the client modules that re-export them: a Server
+// Component importing a client export gets a throwing stub, which then gets
+// interpolated into the script below as invalid JavaScript.
+import { LOCALE_KEY, THEME_KEY } from "@/lib/storage-keys";
 
 import "./globals.css";
 

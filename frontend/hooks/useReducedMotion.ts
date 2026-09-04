@@ -10,7 +10,11 @@
  */
 import { useEffect, useState } from "react";
 
-export const MOTION_KEY = "aegis-motion";
+import { MOTION_KEY } from "@/lib/storage-keys";
+
+// Re-exported so existing call sites keep importing it from here, while the
+// single definition lives in a module a Server Component can also read.
+export { MOTION_KEY };
 
 export function useReducedMotion() {
   const [reduced, setReduced] = useState(false);

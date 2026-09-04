@@ -10,12 +10,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { motion } from "motion/react";
+import { motion, useMotionValueEvent, useScroll } from "motion/react";
 import { useCallback, useEffect, useState } from "react";
 
 import { SPRING } from "@/design/motion";
 import { useSession } from "@/components/domain/AppProviders";
+import { Footer } from "@/components/domain/Footer";
 import { NotificationPanel } from "@/components/domain/NotificationPanel";
+import { usePeerHover } from "@/hooks/usePeerHover";
 import { api } from "@/lib/api";
 import { relative } from "@/lib/format";
 import { useI18n } from "@/lib/i18n";
@@ -30,10 +32,17 @@ const LINKS: NavLink[] = [
 ];
 
 export function Shell({ children }: { children: React.ReactNode }) {
+  // The bar is transparent until the page has moved. `useMotionValueEvent` on
+  // Framer's passive scroll observer, so there is still no scroll listener.
+  const [scrolled, setScrolled] = useState(false);
   const { t, locale, setLocale } = useI18n();
   const { me, status, health, rail, theme, setTheme, signOut } = useSession();
   const pathname = usePathname();
-  const [hovered, setHovered] = useState<string | null>(null);
+  // The bar uses the same peer hover as the rest of the page, with one
+  // difference declared in CSS: nav items do not grow, they only take or give
+  // up contrast.  A 56px bar that resizes its own contents is the opposite of
+  // subtle.
+  const peers = usePeerHover();
   const [queue, setQueue] = useState(0);
   const [unread, setUnread] = useState(0);
   const [panelOpen, setPanelOpen] = useState(false);
@@ -53,6 +62,14 @@ export function Shell({ children }: { children: React.ReactNode }) {
     void loadCounts();
   }, [loadCounts, pathname]);
 
+  const { scrollY } = useScroll();
+  useMotionValueEvent(scrollY, "change", (value) => {
+    // One threshold with hysteresis-free comparison: the state only flips when
+    // it actually changes, so this does not re-render on every frame.
+    const next = value > 8;
+    setScrolled((current) => (current === next ? current : next));
+  });
+
   const degraded = (health?.degraded ?? []).filter((name) => name !== "payment_rail");
   const banner = degraded.includes("chain_rpc")
     ? t("boot.degradedChain")
@@ -62,7 +79,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="shell">
-      <nav className="nav" onPointerLeave={() => setHovered(null)}>
+      <nav className="nav" data-scrolled={scrolled} {...peers.group}>
         <Link href="/" className="nav-brand" data-cursor="">
           <svg width="16" height="16" viewBox="0 0 28 28" aria-hidden>
             <circle cx="14" cy="14" r="12" fill="none" stroke="currentColor" strokeWidth="1.5" />
@@ -81,14 +98,17 @@ export function Shell({ children }: { children: React.ReactNode }) {
           <ul className="nav-links">
             {LINKS.map((link) => {
               const active = pathname.startsWith(link.href);
-              const on = hovered === link.href || (hovered === null && active);
+              // At rest the bar marks the current page; under the pointer it
+              // slides to whatever is being considered.
+              const on = peers.active === null ? active : peers.active === link.href;
               return (
-                <li key={link.href} onPointerEnter={() => setHovered(link.href)}>
+                <li key={link.href}>
                   <Link
                     href={link.href}
                     className="nav-link"
                     aria-current={active ? "page" : undefined}
                     data-cursor=""
+                    {...peers.peer(link.href)}
                   >
                     {on ? (
                       <motion.span
@@ -111,12 +131,12 @@ export function Shell({ children }: { children: React.ReactNode }) {
 
         <div className="nav-right">
           {rail ? (
-            <span className="nano" title={`${t("common.railMode")} ${rail.mode}`}>
+            <span className="nano nav-meta" title={`${t("common.railMode")} ${rail.mode}`}>
               {t("common.railMode")} {rail.mode}
             </span>
           ) : null}
           {health ? (
-            <span className="nano" title={`${t("common.aiProvider")} ${health.ai_provider}`}>
+            <span className="nano nav-meta" title={`${t("common.aiProvider")} ${health.ai_provider}`}>
               {t("common.aiProvider")} {health.ai_provider.toUpperCase()}
             </span>
           ) : null}
@@ -133,7 +153,12 @@ export function Shell({ children }: { children: React.ReactNode }) {
                 <span aria-hidden>◔</span>
                 {unread > 0 ? <span className="nav-badge num">{unread}</span> : null}
               </button>
-              <Link href="/settings" className="nav-link" data-cursor="">
+              <Link
+                href="/settings"
+                className="nav-link"
+                data-cursor=""
+                {...peers.peer("/settings")}
+              >
                 {t("nav.settings")}
               </Link>
             </>
@@ -158,11 +183,16 @@ export function Shell({ children }: { children: React.ReactNode }) {
           </button>
 
           {status === "signed-in" ? (
-            <button className="icon-btn" onClick={() => void signOut()} data-cursor="">
+            <button className="icon-btn nav-auth" onClick={() => void signOut()} data-cursor="">
               <span className="nano">{t("nav.signOut")}</span>
             </button>
           ) : (
-            <Link href="/login" className="nav-link" data-cursor="">
+            <Link
+              href="/login"
+              className="nav-link nav-auth"
+              data-cursor=""
+              {...peers.peer("/login")}
+            >
               {t("auth.signIn")}
             </Link>
           )}
@@ -209,6 +239,24 @@ export function Shell({ children }: { children: React.ReactNode }) {
                 {t("nav.settings")}
               </Link>
             </li>
+            {/* Hidden from the bar below 768px, so it lives here instead. */}
+            <li>
+              {status === "signed-in" ? (
+                <button
+                  className="sheet-action"
+                  onClick={() => {
+                    setSheetOpen(false);
+                    void signOut();
+                  }}
+                >
+                  {t("nav.signOut")}
+                </button>
+              ) : (
+                <Link href="/login" onClick={() => setSheetOpen(false)}>
+                  {t("auth.signIn")}
+                </Link>
+              )}
+            </li>
           </ul>
         </div>
       ) : null}
@@ -226,21 +274,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
         {children}
       </main>
 
-      <footer className="container" style={{ paddingBlock: "var(--sp-5)" }}>
-        <hr className="rule" />
-        <div className="row-between" style={{ paddingTop: "var(--sp-3)" }}>
-          <span className="nano">
-            {t("brand")} - {t("tagline")}
-          </span>
-          {health ? (
-            <span className="nano">
-              {Object.entries(health.checks)
-                .map(([name, check]) => `${name.toUpperCase()} ${check.ready ? "OK" : "DEGRADED"}`)
-                .join(" · ")}
-            </span>
-          ) : null}
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }
