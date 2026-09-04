@@ -251,7 +251,7 @@ jobs:
           uv run python - <<'PY'
           from tests.conftest import database_available
           if not database_available():
-              raise SystemExit("database unreachable — integration tests would skip")
+              raise SystemExit("database unreachable - integration tests would skip")
           print("database reachable")
           PY
 

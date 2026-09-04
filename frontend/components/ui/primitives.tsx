@@ -283,7 +283,7 @@ export function Hash({
 }) {
   const t = useT();
   const [copied, setCopied] = useState(false);
-  if (!value) return <span className="num">—</span>;
+  if (!value) return <span className="num">-</span>;
   const clean = value.startsWith("0x") ? value.slice(2) : value;
   const short =
     clean.length <= head + tail ? value : `${clean.slice(0, head)}…${clean.slice(-tail)}`;

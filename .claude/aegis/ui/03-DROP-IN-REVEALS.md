@@ -1,4 +1,4 @@
-# 03 — ELEMENT DROP-IN / APPEARANCE SYSTEM
+# 03 - ELEMENT DROP-IN / APPEARANCE SYSTEM
 
 The entrance vocabulary, mixed from **reference A** (per-word `rotateX` flip, `chipPop` overshoot,
 stepped wipe) and **reference B** (blur-up rise, slat masks, staggered density). One default,
@@ -20,7 +20,7 @@ duration 520ms, ease enter, stagger 90ms
 ```
 
 The `-10°` rotateX is the whole trick. It gives the element a barely-perceptible sense of falling
-into the plane rather than sliding up it — A's character at a strength that survives being used
+into the plane rather than sliding up it - A's character at a strength that survives being used
 two hundred times. Requires `perspective: 800px` on the container.
 
 ```tsx
@@ -51,7 +51,7 @@ Set `perspective` once on the section wrapper, not per item.
 | Toasts | `y +12 → 0` + `opacity`, `--d-fast` | Fast, from the edge it's docked to |
 
 **Never** apply `flipWord` to body copy, table rows, or anything under `--fs-h4`. At small sizes
-the rotation reads as a font-rendering glitch — which, in a product whose entire claim is
+the rotation reads as a font-rendering glitch - which, in a product whose entire claim is
 trustworthiness, is exactly the wrong impression.
 
 ---
@@ -59,7 +59,7 @@ trustworthiness, is exactly the wrong impression.
 ## 3. Composition rules
 
 1. **One variant per element.** Never nest `dropIn` inside `dropIn`; the child inherits the
-   parent's transform and the blur compounds into mush. Animate the parent, or the children —
+   parent's transform and the blur compounds into mush. Animate the parent, or the children -
    not both.
 2. **Group order is fixed** (from reference B's section rhythm):
    `rule → corner metadata → headline → paragraph → content`, `--st-loose` between groups.
@@ -68,7 +68,7 @@ trustworthiness, is exactly the wrong impression.
 4. **Cap the stagger at 400ms.** `stagger()` in `motion.ts` already does this. A 30-row clause
    table must not take 1.6s to appear.
 5. **Once only.** Every scroll reveal uses `viewport={inView}` (`once: true`). Scrolling back up
-   never replays. This is non-negotiable — replayed entrances are the fastest way to make a
+   never replays. This is non-negotiable - replayed entrances are the fastest way to make a
    product feel cheap.
 6. **Direction is always up.** Nothing enters from the left, right, or above. Reference A and B
    both move in one direction and it is why they feel calm. The only exceptions are `panelWipe`
@@ -76,7 +76,7 @@ trustworthiness, is exactly the wrong impression.
 
 ---
 
-## 4. Lists and tables — the density problem
+## 4. Lists and tables - the density problem
 
 Reference B's dense micro-grid works because dozens of tiny rows appear as one texture, not as
 dozens of events. Match that:
@@ -123,7 +123,7 @@ export function BlurLines({ children }: { children: string }) {
 ```
 
 Author line breaks explicitly (`"first clause / second clause"`) rather than measuring text at
-runtime. Runtime line-splitting breaks on font load, on resize, and on translation into Hindi —
+runtime. Runtime line-splitting breaks on font load, on resize, and on translation into Hindi -
 and Hindi is a requirement (spec §24).
 
 ---
@@ -133,12 +133,12 @@ and Hindi is a requirement (spec §24).
 Devanagari has taller ascenders and a headline (शिरोरेखा) that makes tight leading collide.
 
 - Add `[lang="hi"] { --lh-display-1: 1.02; --lh-display-2: 1.06; --tr-display-1: -0.01em; }`
-- `flipWord` splits on spaces, which is correct for Hindi word boundaries — but Hindi words are
+- `flipWord` splits on spaces, which is correct for Hindi word boundaries - but Hindi words are
   longer, so **check the two-line hero doesn't become four**. Provide a separate, shorter Hindi
   headline rather than translating the English literally.
 - Do not letter-space Devanagari. Scope `--tr-micro` to `[lang="en"]`, or conjuncts break.
 - Numerals stay Latin with Indian grouping in both languages (`₹4,20,000`). Do not switch to
-  Devanagari digits — Indian financial interfaces use Latin numerals.
+  Devanagari digits - Indian financial interfaces use Latin numerals.
 
 ---
 
@@ -150,7 +150,7 @@ Every view needs all three (spec §24), and each has a defined motion:
 |---|---|
 | **Loading** | Skeleton blocks at `--ink-800`, with a `1.6s` shimmer sweep (`linear`, `transform` only). Skeletons match the final layout's dimensions so nothing jumps on load. No spinners on the cockpit, verification result or review queue. |
 | **Empty** | `dropIn` once. A `micro` label, a one-line explanation, and the single action that resolves it. Never an illustration. |
-| **Error** | No entrance animation — errors appear instantly. `--sig-fail-tint` background, `1px` `--sig-fail-edge` border, the typed error `code` in mono, the human message below, and a retry action. Mirrors the API's typed envelope (spec §I9). |
+| **Error** | No entrance animation - errors appear instantly. `--sig-fail-tint` background, `1px` `--sig-fail-edge` border, the typed error `code` in mono, the human message below, and a retry action. Mirrors the API's typed envelope (spec §I9). |
 
 Layout must not shift between the three. Reserve the space.
 

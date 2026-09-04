@@ -164,10 +164,10 @@ export default function ReviewQueuePage() {
                     <Meta
                       label={t("verification.confidence")}
                       value={
-                        selected.confidence === null ? "—" : fmtConfidence(selected.confidence)
+                        selected.confidence === null ? "-" : fmtConfidence(selected.confidence)
                       }
                     />
-                    <Meta label={t("verification.decision")} value={selected.decision ?? "—"} />
+                    <Meta label={t("verification.decision")} value={selected.decision ?? "-"} />
                   </div>
 
                   <div className="row">

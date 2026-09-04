@@ -1,4 +1,4 @@
-# 00 — DESIGN SYSTEM
+# 00 - DESIGN SYSTEM
 
 Dark-first, monochrome brand, three semantic hues. Synthesised from reference **B** (near-black
 editorial canvas, dense micro-labels, hairline rules) and reference **D** (tiny paired labels,
@@ -23,7 +23,7 @@ interface changes colour for the first time. Protect that.
 
 ### 1.2 Neutrals
 
-Near-black canvas from B, bone from D. Bone is the *text* colour, not a background — that
+Near-black canvas from B, bone from D. Bone is the *text* colour, not a background - that
 inversion is what keeps it from looking like reference D.
 
 ```
@@ -58,17 +58,17 @@ for AA contrast on bone (values in the token block).
 
 | Role | Family | Source | Why |
 |---|---|---|---|
-| Display + UI | **Satoshi** (300/500/700/900) | Fontshare, free, self-host via `next/font/local` | Geometric grotesk with a real Black weight — carries A's wide headline voice *and* B's huge condensed-feeling caps |
+| Display + UI | **Satoshi** (300/500/700/900) | Fontshare, free, self-host via `next/font/local` | Geometric grotesk with a real Black weight - carries A's wide headline voice *and* B's huge condensed-feeling caps |
 | Mono / micro | **JetBrains Mono** (400/500/700) | Google Fonts or self-host | Micro-labels, ids, hashes, addresses, timestamps, and every number that must align |
 
 Fallbacks: `Satoshi, "Inter", system-ui, sans-serif` and
 `"JetBrains Mono", ui-monospace, "SF Mono", monospace`.
-If Satoshi cannot be self-hosted, substitute **General Sans** (also Fontshare) — do **not**
+If Satoshi cannot be self-hosted, substitute **General Sans** (also Fontshare) - do **not**
 substitute Inter for display; it has no Black weight with this presence.
 
 ### 2.2 Scale
 
-Fluid via `clamp()`, mobile-first. Line-height tightens as size grows — that inverse relationship
+Fluid via `clamp()`, mobile-first. Line-height tightens as size grows - that inverse relationship
 is what makes B's hero read as a *block* rather than as lines.
 
 | Token | clamp() | LH | Tracking | Use |
@@ -83,7 +83,7 @@ is what makes B's hero read as a *block* rather than as lines.
 | `--fs-nano` | `0.625rem` (10px) | 1.25 | 0.11em | Corner metadata (B/D style) |
 
 Display type is **`--font-display` at weight 900** for hero and CTA; weight 500 for screen titles.
-Never use 900 below `--fs-display-3` — it turns to mud.
+Never use 900 below `--fs-display-3` - it turns to mud.
 
 ### 2.3 Two-tone words (from A)
 
@@ -99,8 +99,8 @@ A's headlines alternate solid and muted words to create rhythm. Adopted, monochr
 ```
 
 `.w-solid { color: var(--white) }` · `.w-muted { color: var(--grey-500) }`
-Ratio roughly 60/40 solid to muted. Muted words are the connective tissue — articles,
-prepositions, auxiliaries — never the nouns that carry meaning.
+Ratio roughly 60/40 solid to muted. Muted words are the connective tissue - articles,
+prepositions, auxiliaries - never the nouns that carry meaning.
 
 ### 2.4 Inline chips inside headlines (from A)
 
@@ -115,7 +115,7 @@ Chip: `inline-flex`, height `0.72em`, `border-radius: 999px`, `padding: 0 0.5em`
 `font: 500 0.34em/1 var(--font-mono)`, `vertical-align: 0.06em`, background = semantic tint,
 border = `1px solid` semantic at 40%. Never more than **one chip per headline**.
 
-### 2.5 Numerals — mandatory
+### 2.5 Numerals - mandatory
 
 ```css
 .num, td, .money { font-variant-numeric: tabular-nums; font-family: var(--font-mono); }
@@ -162,7 +162,7 @@ Use for: deal metadata, attestation provenance fields, chain records, counterpar
 metadata on section headers. **Rule: a micro-label never wraps.** Truncate the value with
 `text-overflow: ellipsis` and expose the full string on hover/focus.
 
-Corner metadata (B): each major section carries `--fs-nano` labels at its top-left and top-right —
+Corner metadata (B): each major section carries `--fs-nano` labels at its top-left and top-right -
 section index (`03 / 07`), and a state or count. Cheap, and it does most of the work of making the
 page feel like a system.
 
@@ -173,14 +173,14 @@ page feel like a system.
 - **Grid:** 12 columns, `gap: clamp(1rem, 2vw, 1.75rem)`, max container `1440px`,
   gutter `clamp(1.25rem, 5vw, 4.5rem)`.
 - **Breakpoints:** `sm 480 · md 768 · lg 1024 · xl 1280 · 2xl 1536`. Design at 375 first.
-- **Section rhythm:** `padding-block: clamp(4.5rem, 12vh, 10rem)`. Hero is `100svh` (not `vh` —
+- **Section rhythm:** `padding-block: clamp(4.5rem, 12vh, 10rem)`. Hero is `100svh` (not `vh` -
   mobile browser chrome).
 - **Hairline rules, not cards.** Structure comes from `1px solid var(--line-1)` dividers and
-  space. Surfaces (`--ink-800`) are used only where content must be *lifted* — a card in a review
+  space. Surfaces (`--ink-800`) are used only where content must be *lifted* - a card in a review
   queue, a modal. No drop shadows on dark; use a `1px` top highlight instead:
   `box-shadow: inset 0 1px 0 rgb(255 255 255 / .04)`.
 - **Radius:** `--r-sm 6px` (chips, inputs) · `--r-md 10px` (cards) · `--r-lg 16px` (panels) ·
-  `--r-full 999px` (pills, cursor). Restrained — B and C are near-square; A's roundness is not
+  `--r-full 999px` (pills, cursor). Restrained - B and C are near-square; A's roundness is not
   adopted.
 - **Wide content:** clause tables, ledger lists and provenance records get
   `overflow-x: auto; overscroll-behavior-x: contain` on their own wrapper. The page never scrolls
@@ -188,11 +188,11 @@ page feel like a system.
 
 ---
 
-## 5. `frontend/design/tokens.css` — copy verbatim
+## 5. `frontend/design/tokens.css` - copy verbatim
 
 ```css
 /* ─────────────────────────────────────────────────────────────────────────
-   AEGIS DESIGN TOKENS — the only file in the project that defines a colour,
+   AEGIS DESIGN TOKENS - the only file in the project that defines a colour,
    a size, or a radius. Components reference tokens; never literals.
    Dark is the default. Light inverts neutrals; semantic hues darken for AA.
    ───────────────────────────────────────────────────────────────────────── */
@@ -211,7 +211,7 @@ page feel like a system.
   --bone-100: #F2EFE9;
   --white:    #FFFFFF;
 
-  /* ── Semantic hues — the ONLY colour in the product ───────── */
+  /* ── Semantic hues - the ONLY colour in the product ───────── */
   --sig-pass:        #4FD1A5;
   --sig-unverified:  #FFC24B;
   --sig-fail:        #FF4A4A;
@@ -279,7 +279,7 @@ page feel like a system.
   --z-toast: 50; --z-cursor: 90; --z-boot: 100;
 }
 
-/* System-preference dark: already the default — nothing to redefine. */
+/* System-preference dark: already the default - nothing to redefine. */
 
 /* Explicit light theme */
 :root[data-theme="light"] {
@@ -368,7 +368,7 @@ img, video, svg { max-width: 100%; display: block; }
 
 ---
 
-## 6. State chip — the most-used component
+## 6. State chip - the most-used component
 
 ```tsx
 const TONE = {
@@ -400,7 +400,7 @@ export function StateChip({ tone, children }:
 ```
 
 Copy for the three verdicts is fixed and must not be softened: `PASS` · `UNVERIFIABLE` · `FAIL`.
-Never "unclear", "pending" or "review" — the product's whole argument rests on the machine saying
+Never "unclear", "pending" or "review" - the product's whole argument rests on the machine saying
 plainly that it could not verify something.
 
 ---
@@ -408,7 +408,7 @@ plainly that it could not verify something.
 ## 7. Accessibility checklist
 
 - [ ] AA contrast for all text in both themes (verify `--grey-500` usage is micro-only).
-- [ ] Semantic state is never conveyed by colour alone — every chip carries its word, and clause
+- [ ] Semantic state is never conveyed by colour alone - every chip carries its word, and clause
       rows carry an icon (`✓` / `?` / `✕`) as well as a hue.
 - [ ] Focus visible on every interactive element, in both themes, and **not** removed when the
       custom cursor is active.

@@ -65,7 +65,7 @@ export const timeOnly = (iso: string | Date) =>
 
 /** Truncated in the middle, never at the end: both ends of a hash carry signal. */
 export const shortHash = (hash: string | null | undefined, head = 4, tail = 4) => {
-  if (!hash) return "—";
+  if (!hash) return "-";
   const clean = hash.startsWith("0x") ? hash.slice(2) : hash;
   if (clean.length <= head + tail) return hash;
   return `${clean.slice(0, head)}…${clean.slice(-tail)}`;

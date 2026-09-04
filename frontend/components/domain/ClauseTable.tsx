@@ -47,7 +47,7 @@ export function ClauseTable({
         ))}
       </span>
     ) : (
-      <span className="num">—</span>
+      <span className="num">-</span>
     );
 
   return (

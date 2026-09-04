@@ -45,8 +45,8 @@ stable namespace, so re-running applies nothing new:
 second run: 0 applied, 8 skipped
 ```
 
-Resumable matters more than idempotent: if the seed dies halfway — because Kafka was not up, or the
-process was interrupted — re-running completes the remaining steps instead of failing on the ones
+Resumable matters more than idempotent: if the seed dies halfway - because Kafka was not up, or the
+process was interrupted - re-running completes the remaining steps instead of failing on the ones
 already done. Each step checks for its own output before doing work.
 
 Demo passwords come from the environment (`DEMO_BUYER_PASSWORD`, `DEMO_SELLER_PASSWORD`) and are
@@ -60,7 +60,7 @@ a deal and the demo would stop at minute one.
 Nothing below requires a code change. Every one of these is an environment variable, and every one
 changes what the UI and `/payments/rail` report.
 
-### Razorpay — test mode only
+### Razorpay - test mode only
 
 ```bash
 PAYMENT_RAIL=razorpay
@@ -70,7 +70,7 @@ RAZORPAY_WEBHOOK_SECRET=...
 RAZORPAY_ROUTE_SELLER_ACCOUNT=acc_...     # required for a real seller release via Route
 ```
 
-`RazorpayRail` **refuses to start on a live key** — a key id that is not `rzp_test_` raises
+`RazorpayRail` **refuses to start on a live key** - a key id that is not `rzp_test_` raises
 `RAZORPAY_NOT_TEST_MODE`. That is deliberate: this system has never moved real money and must not
 start doing so because someone pasted the wrong key.
 
@@ -96,12 +96,12 @@ AI_API_KEY=...                 # or GROQ_API_KEY
 ```
 
 Then re-run `make eval`. Every generated report states the provider that produced it, so a live run
-and a fixture run can never be confused — the banner at the top of `RESULTS.md`, the
+and a fixture run can never be confused - the banner at the top of `RESULTS.md`, the
 `provider` block in `summary.json`, the landing-page footnote and the nav chrome all read the same
 field.
 
 With Anthropic: `claude-opus-5` for verification and arbitration, `claude-sonnet-5` for extraction,
-`thinking={"type": "adaptive"}`, and **never** `budget_tokens` — it 400s on both models, and
+`thinking={"type": "adaptive"}`, and **never** `budget_tokens` - it 400s on both models, and
 `tests/unit/test_prompt_cache_contract.py` asserts it is not passed.
 
 ### The contract
@@ -130,10 +130,10 @@ queue state rather than a hash that does not exist.
 curl -s localhost:8000/api/v1/health/metrics | jq '{outbox_backlog, dlq_depth, authorizations}'
 ```
 
-* **`outbox_backlog`** — unpublished outbox rows. Non-zero means the relay is behind, **not** that an
+* **`outbox_backlog`** - unpublished outbox rows. Non-zero means the relay is behind, **not** that an
   event was lost. Sustained growth means Kafka or the relay needs attention.
-* **`dlq_depth`** — undrained dead letters. Non-zero means something needs a human.
-* **`authorizations`** — settlement authorizations written. Compare with payouts: they should track
+* **`dlq_depth`** - undrained dead letters. Non-zero means something needs a human.
+* **`authorizations`** - settlement authorizations written. Compare with payouts: they should track
   1:1 once consumed.
 
 All three are on the `/ledger` screen, so an operator does not need a terminal.
@@ -147,7 +147,7 @@ curl -s localhost:8000/api/v1/health/ready | jq
 `required` distinguishes a dependency that must be up (Postgres, the object store, the rail) from one
 whose absence degrades a feature (Redis, Kafka, the chain RPC). Only Postgres halts the boot screen;
 Kafka down shows
-*"EVENTS QUEUED IN THE OUTBOX"* and the chain RPC down shows *"ANCHORING DISABLED"* — both accurate.
+*"EVENTS QUEUED IN THE OUTBOX"* and the chain RPC down shows *"ANCHORING DISABLED"* - both accurate.
 
 ### Logs
 
@@ -173,15 +173,15 @@ thread, so a Kafka outage cannot block a request path.
 
 1. Is Kafka healthy? `docker compose ps kafka`
 2. Is the relay alive? `docker compose logs --tail=50 relay`
-3. Restart the relay: `docker compose restart relay`. It is safe to restart at any point — it selects
+3. Restart the relay: `docker compose restart relay`. It is safe to restart at any point - it selects
    `FOR UPDATE SKIP LOCKED` and only ever sets `published_at`.
 4. Nothing is lost while the backlog grows. Money already authorised stays authorised; the event is
    the *notification*, not the decision.
 
 ### A payout is stuck
 
-1. `GET /api/v1/settlements/deals/{id}` — is there an authorization, and is `consumed_at` null?
-2. `GET /api/v1/payments/deals/{id}/payouts` — is there a `FAILED` row, and what is `failure_reason`?
+1. `GET /api/v1/settlements/deals/{id}` - is there an authorization, and is `consumed_at` null?
+2. `GET /api/v1/payments/deals/{id}/payouts` - is there a `FAILED` row, and what is `failure_reason`?
 3. If the authorization is unconsumed and the payout failed, the retry path is legal: the milestone
    stays `RELEASE_APPROVED` and `_release_transition()` returns `None` on that path rather than
    forcing an illegal transition. The event will be retried.
@@ -207,7 +207,7 @@ where the chain broke.
 
 ### `make demo` says the deal was not found
 
-`make eval` truncates every table so the suites run against a known-empty database — the
+`make eval` truncates every table so the suites run against a known-empty database - the
 seeded demo deal goes with it. Re-seed and re-run:
 
 ```bash
@@ -216,7 +216,7 @@ make seed && make demo        # or: make eval-demo, which does eval -> up -> see
 
 ### A deal advanced on its own after `make eval`
 
-`make eval` truncates every table, including `processed_events` — but the Kafka topics still
+`make eval` truncates every table, including `processed_events` - but the Kafka topics still
 hold the events published before the truncate. When the worker restarts it consumes them
 again, the dedupe records are gone, and a deterministically-seeded deal can pick up a
 settlement from the previous life of the database.
@@ -234,7 +234,7 @@ make destroy && make up && make seed && make demo    # or just: make demo-reset
 The suite drives the relay and the consumers **in-process** against the compose
 Postgres. If the `worker` and `relay` containers are running, they consume the same
 Kafka topics and the same database, and they will win claim races against the test's own
-attempts — producing failures like *"0 rail calls"* that are the idempotency guarantee
+attempts - producing failures like *"0 rail calls"* that are the idempotency guarantee
 working, not a defect.
 
 `make test` stops those two services first for exactly this reason; `make up` brings them
@@ -242,12 +242,12 @@ back. CI provisions its own Postgres with no worker, so it never hits this.
 
 ### A verification looks wrong
 
-1. `GET /api/v1/verification/milestones/{id}` — the full attestation, including
+1. `GET /api/v1/verification/milestones/{id}` - the full attestation, including
    `confidence_components` and `deterministic_prechecks`.
 2. `resolved_without_llm: true` means no model was involved at all; the pre-checks decided.
 3. `prompt_hash` identifies the exact rendered prompt. `model_id` and `model_version` identify what
    answered.
-4. The decision is not re-derivable by re-running the model — models are not deterministic — but it
+4. The decision is not re-derivable by re-running the model - models are not deterministic - but it
    **is** re-checkable: the signature verifies against the canonical payload, and the Merkle root
    proves which evidence was seen.
 
@@ -263,7 +263,7 @@ docker run --rm -v aegis_evidence:/data -v "$PWD":/backup alpine \
 
 Both are needed. The database holds every hash; the evidence volume holds the bytes those hashes
 commit to. A database without the artifacts still verifies the ledger and every signature, but the
-Merkle proofs can no longer be re-walked against real bytes — which is precisely the property the
+Merkle proofs can no longer be re-walked against real bytes - which is precisely the property the
 provenance screen demonstrates.
 
 Restore: `gunzip -c … | docker compose exec -T postgres psql -U aegis aegis`, then untar the volume,
@@ -278,7 +278,7 @@ addresses:
 
 | variable | default | effect |
 |---|---|---|
-| `DEMO_MODE` | `true` | Registers `/dev/*`. **Set `false` in any shared deployment** — the router then does not exist. |
+| `DEMO_MODE` | `true` | Registers `/dev/*`. **Set `false` in any shared deployment** - the router then does not exist. |
 | `PAYMENT_RAIL` | `simulated` | `razorpay` switches to real test mode; a live key is refused. |
 | `AI_PROVIDER` | `fixture` | `anthropic`, `groq`, or the deterministic offline adapter. |
 | `CHAIN_ENABLED` | `true` | With no `CONTRACT_ADDRESS`, anchors queue and report why. |
@@ -293,11 +293,11 @@ addresses:
 
 ## 8. Before a shared deployment
 
-- [ ] `DEMO_MODE=false` — the demo login route stops existing
+- [ ] `DEMO_MODE=false` - the demo login route stops existing
 - [ ] `JWT_SECRET` regenerated
 - [ ] `COOKIE_SECURE=true` and TLS terminating in front
 - [ ] `DEMO_BUYER_PASSWORD` / `DEMO_SELLER_PASSWORD` changed or the seed skipped
 - [ ] `CORS_ORIGINS` narrowed to the real origin
 - [ ] Postgres and the evidence volume backed up, and a restore actually tried
-- [ ] The gaps in [`SECURITY.md §8`](SECURITY.md#8-not-built-and-named-as-such) read and accepted —
+- [ ] The gaps in [`SECURITY.md §8`](SECURITY.md#8-not-built-and-named-as-such) read and accepted -
       there is no MFA and no CSRF token

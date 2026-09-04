@@ -137,11 +137,11 @@ export function ReviewDecision({
             <div className="meta-grid">
               <Meta
                 label={t("review.release")}
-                value={Number.isFinite(releasePaise) ? inrExact(releasePaise) : "—"}
+                value={Number.isFinite(releasePaise) ? inrExact(releasePaise) : "-"}
               />
               <Meta
                 label={t("review.refund")}
-                value={Number.isFinite(refundPaise) ? inrExact(refundPaise) : "—"}
+                value={Number.isFinite(refundPaise) ? inrExact(refundPaise) : "-"}
               />
               <Meta label={t("deal.funded")} value={inrExact(amountPaise)} />
               <Meta

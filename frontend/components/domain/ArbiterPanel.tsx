@@ -63,7 +63,7 @@ export function ArbiterPanel({
     >
       <div className="stack" style={{ gap: "var(--sp-4)" }}>
         <div className="meta-grid">
-          <Meta label={t("review.outcome")} value={recommendation.outcome ?? "—"} />
+          <Meta label={t("review.outcome")} value={recommendation.outcome ?? "-"} />
           <Meta label={t("review.release")} value={inr(release)} />
           <Meta label={t("review.refund")} value={inr(refund)} />
           <Meta
@@ -78,13 +78,13 @@ export function ArbiterPanel({
             label={t("verification.confidence")}
             value={
               recommendation.confidence === undefined
-                ? "—"
+                ? "-"
                 : fmtConfidence(recommendation.confidence)
             }
           />
           <Meta
             label={t("verification.model")}
-            value={`${recommendation.provider ?? "—"} · ${recommendation.model_id ?? "—"}`}
+            value={`${recommendation.provider ?? "-"} · ${recommendation.model_id ?? "-"}`}
           />
         </div>
 

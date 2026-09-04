@@ -1,4 +1,4 @@
-# 02 — BOOT SEQUENCE & HERO
+# 02 - BOOT SEQUENCE & HERO
 
 The hero is the mix you asked for: **reference A's structure** (staged progress preloader → stepped
 wipe → per-word flip headline) on **reference B's canvas** (near-black, vertical slat reveal,
@@ -11,8 +11,8 @@ Total boot-to-interactive target: **2.6s**, and it must be skippable.
 ## 1. Why the preloader earns its place here
 
 A loading screen is usually a vanity tax. In Aegis it is not, because the app genuinely has four
-dependencies that must be ready before money can move — Postgres, Kafka, the chain RPC, and the
-payment rail — and the spec already requires a `/health` endpoint that reports each one
+dependencies that must be ready before money can move - Postgres, Kafka, the chain RPC, and the
+payment rail - and the spec already requires a `/health` endpoint that reports each one
 (spec §32).
 
 So reference A's progress-node track is wired to **real readiness data**. Each node is a subsystem;
@@ -25,14 +25,14 @@ instead of crashing.
 
 ---
 
-## 2. Boot sequence — shot by shot
+## 2. Boot sequence - shot by shot
 
 ### Frame 0 → 0.2s · Black
 `--ink-900` fill. Nothing. Sets the contrast for everything after.
 
 ### 0.2 → 0.6s · Mark and counter arrive
 - Centre: the Aegis mark (a 28px seal glyph) fades in with `chipPop`.
-- Top-left: `nano` label `AEGIS — PROGRAMMABLE ESCROW`.
+- Top-left: `nano` label `AEGIS - PROGRAMMABLE ESCROW`.
 - Top-right: `nano` counter `000` → climbing. Mono, tabular, three digits, from reference D.
 - Bottom-left: `nano` label `BOOT`.
 
@@ -49,16 +49,16 @@ POSTGRES ──●── KAFKA ──●── CHAIN ──●── RAIL ──
 - The **fill line** animates `scaleX 0→1` between nodes, `linear`, as each check returns.
 - On ready: node border → `--sig-pass`, glyph → `--sig-pass`, `chipPop` overshoot.
 - On degraded: node border → `--sig-unverified`, and a `micro` line appears beneath the track:
-  `CHAIN RPC UNAVAILABLE — ANCHORING DISABLED`.
+  `CHAIN RPC UNAVAILABLE - ANCHORING DISABLED`.
 - On hard fail (Postgres): node → `--sig-fail`, boot halts, retry button appears. Do not proceed
   into a broken app.
 - Counter reaches `100` as the fourth node resolves.
 
-Minimum on-screen time **1.1s** even if health returns instantly — otherwise it flashes and reads
+Minimum on-screen time **1.1s** even if health returns instantly - otherwise it flashes and reads
 as a glitch. Maximum **4s**, after which boot proceeds with whatever is ready and the degraded
 banner shows.
 
-### 1.9 → 2.66s · Stepped wipe out (reference A — keep this, it is the signature)
+### 1.9 → 2.66s · Stepped wipe out (reference A - keep this, it is the signature)
 The black boot panel exits as a **descending staircase**, sweeping bottom-left → top-right, over
 `--d-wipe` (760ms) with `expo`. Six discrete steps. The app is already mounted and painted
 underneath, so the wipe reveals a live interface, not a second loading state.
@@ -75,7 +75,7 @@ underneath, so the wipe reveals a live interface, not a second loading state.
 
 Use the `stepWipeClip(p, steps)` helper from `motion.ts`. If `clip-path` polygon animation stutters
 on a target device, fall back to **six sibling `div`s** each scaling `scaleY 1→0` from the top with
-an `18ms` stagger — visually near-identical and cheaper.
+an `18ms` stagger - visually near-identical and cheaper.
 
 ### Skip and repeat rules
 - Any key, click or scroll during boot jumps straight to the wipe.
@@ -85,7 +85,7 @@ an `18ms` stagger — visually near-identical and cheaper.
 
 ---
 
-## 3. Hero — layout
+## 3. Hero - layout
 
 `100svh`, three stacked layers.
 
@@ -109,23 +109,23 @@ an `18ms` stagger — visually near-identical and cheaper.
       slat-revealed backdrop, 6% opacity, behind everything
 ```
 
-Copy — the headline is the product's thesis, and the stat row is its proof:
+Copy - the headline is the product's thesis, and the stat row is its proof:
 
 - H1: `Every rupee has a provable reason.` (two-tone: solid / muted / solid / solid)
 - Sub: `Milestone escrow for deals between strangers. An AI verifies the evidence, a deterministic
   engine moves the money, and every decision is signed and anchored.`
-- Stat row: `HELD` · `RELEASED` · `FALSE RELEASES 0` — the last one pulled from the live eval
+- Stat row: `HELD` · `RELEASED` · `FALSE RELEASES 0` - the last one pulled from the live eval
   result. Putting `0` in the hero is the boldest claim the product makes; make it real.
 
 ### Backdrop
-Not a photograph (reference B's hero image is not adopted — Aegis has no lifestyle imagery). Use a
+Not a photograph (reference B's hero image is not adopted - Aegis has no lifestyle imagery). Use a
 **generated hairline lattice**: a 24-column × 14-row grid of `1px` `--line-1` lines at 6% opacity,
 with a subtle radial vignette masking the edges. It reveals via `slatUp` and is otherwise static.
 Cheap, on-brand, and it gives the slat reveal something to reveal.
 
 ---
 
-## 4. Hero entrance — the composite (A × B)
+## 4. Hero entrance - the composite (A × B)
 
 Timeline begins on wipe completion, `t = 0`:
 
@@ -134,7 +134,7 @@ Timeline begins on wipe completion, `t = 0`:
 | 0ms | Backdrop lattice | `slatUp` | 24 columns, `18ms` stagger, `900ms`, `expo`. Bottom-anchored. |
 | 180ms | Corner metadata | `blurUp` | Both corners together. |
 | 240ms | H1 line 1 words | `flipWord` | Per **word**, `55ms` stagger, `320ms`, `transform-origin: 50% 100%`, `perspective: 800px`. |
-| 240 + n | H1 line 2 words | `flipWord` | Continues the same stagger index across lines — do not restart per line, or the rhythm breaks. |
+| 240 + n | H1 line 2 words | `flipWord` | Continues the same stagger index across lines - do not restart per line, or the rhythm breaks. |
 | 620ms | Sub-paragraph | `blurUp` | Per line via `<span>` wrapping, `55ms`. |
 | 800ms | CTA buttons | `chipPop` | `40ms` stagger. |
 | 900ms | Hairline + stat row | `dropIn` | Rule scales `scaleX 0→1` from left, then stats stagger, then `countUp` on each figure. |
@@ -143,7 +143,7 @@ Total ≈ **1.35s**, fully overlapping. It should feel like one gesture, not sev
 
 ### The `flipWord` implementation
 
-This is A's most distinctive move — words rotate about their bottom edge like a flap, so mid-flight
+This is A's most distinctive move - words rotate about their bottom edge like a flap, so mid-flight
 they read mirrored. Split on words, never on characters, at display size (character-splitting a
 9rem headline is 40 animated nodes for no gain).
 
@@ -214,12 +214,12 @@ const cols = Array.from({ length: SLAT_COLUMNS });
 ```
 
 The slats sit **above** the lattice and **below** the type, and they wipe *away* to reveal it
-(`scaleY 1→0`) — or wipe *in* as a fill, depending on which reads better against your lattice.
+(`scaleY 1→0`) - or wipe *in* as a fill, depending on which reads better against your lattice.
 Reference B wipes in from the bottom; start there. Unmount the wrapper on completion.
 
 ---
 
-## 5. Scroll behaviour — pinned hero with occlusion (reference B)
+## 5. Scroll behaviour - pinned hero with occlusion (reference B)
 
 B's most memorable scroll move: the hero headline stays put while the next section slides over it,
 progressively covering the type. Adopted, with restraint.
@@ -231,7 +231,7 @@ progressively covering the type. Adopted, with restraint.
 ```
 
 - The hero is `position: sticky; top: 0`, the following section is `relative` with an opaque
-  background and a `1px` top hairline. Pure CSS — **no scroll listener, no scroll-linked JS.**
+  background and a `1px` top hairline. Pure CSS - **no scroll listener, no scroll-linked JS.**
 - Add a scroll-linked fade on the hero content only: `opacity 1 → 0.35` and `scale 1 → 0.97`
   across the first `60vh`, via Framer's `useScroll` + `useTransform` (which uses a passive
   scroll observer, permitted).
@@ -243,7 +243,7 @@ progressively covering the type. Adopted, with restraint.
 
 ---
 
-## 6. Section openers — the repeating pattern
+## 6. Section openers - the repeating pattern
 
 Every subsequent section reuses one pattern, so the page feels composed rather than assembled:
 
@@ -267,7 +267,7 @@ is real and matches the nav.
 | Property | ≥1024px | 768–1023 | <768px |
 |---|---|---|---|
 | H1 size | `--fs-display-1` (up to 9rem) | ~5.5rem | `clamp(3.25rem, 11vw, 4rem)` |
-| Lines | 2 | 2 | 3 — rebreak the copy, don't let it wrap arbitrarily |
+| Lines | 2 | 2 | 3 - rebreak the copy, don't let it wrap arbitrarily |
 | Sticky pin | on | on | **off** |
 | Slat columns | 24 | 16 | 10 |
 | Stat row | 3 across | 3 across | 2 across + 1 wrapped, or horizontal `scroll-x` |

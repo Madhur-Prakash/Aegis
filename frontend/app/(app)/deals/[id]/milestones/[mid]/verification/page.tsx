@@ -146,7 +146,7 @@ export default function VerificationPage() {
                   passed: prechecks.passed,
                   total: prechecks.total,
                 })}
-                value={prechecks.reason || "—"}
+                value={prechecks.reason || "-"}
               />
               {prechecks.checks.map((check) => (
                 <div className="row-between" key={check.check}>

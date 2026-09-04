@@ -133,12 +133,12 @@ export default function DealCockpit() {
               label={t("deal.disputeWindow")}
               value={`${deal.dispute_window_days} ${t("reputation.days")}`}
             />
-            <Meta label={t("deal.riskTier")} value={deal.pricing_tier ?? "—"} />
+            <Meta label={t("deal.riskTier")} value={deal.pricing_tier ?? "-"} />
             <Meta
               label={t("deal.risk")}
               value={
                 deal.risk_score === null ? (
-                  "—"
+                  "-"
                 ) : (
                   <span style={{ color: `var(--sig-${riskTone(deal.risk_score)})` }}>
                     {deal.risk_score.toFixed(3)}

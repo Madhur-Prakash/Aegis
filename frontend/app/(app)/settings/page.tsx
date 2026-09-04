@@ -174,7 +174,7 @@ export default function SettingsPage() {
                     <span className="row">
                       <Toggle
                         pressed={preference.in_app}
-                        label={`${preference.title} — ${t("settings.inApp")}`}
+                        label={`${preference.title} - ${t("settings.inApp")}`}
                         onToggle={() => {
                           void api
                             .saveNotificationPreference({
@@ -190,7 +190,7 @@ export default function SettingsPage() {
                       />
                       <Toggle
                         pressed={preference.email}
-                        label={`${preference.title} — ${t("settings.email")}`}
+                        label={`${preference.title} - ${t("settings.email")}`}
                         onToggle={() => {
                           void api
                             .saveNotificationPreference({

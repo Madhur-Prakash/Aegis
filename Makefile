@@ -1,4 +1,4 @@
-#  Aegis — programmable escrow for agentic commerce
+#  Aegis - programmable escrow for agentic commerce
 #
 #  Every target here is real: nothing prints a number it did not measure, and
 #  nothing succeeds by skipping work.  `make help` is generated from the `##`
@@ -34,7 +34,7 @@ FORGE        := forge
 
 # ── Help ────────────────────────────────────────────────────────────────────
 help: ## Show this help
-	@printf '\nAegis — make targets\n\n'
+	@printf '\nAegis - make targets\n\n'
 	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z0-9_-]+:.*?## / {printf "  \033[1m%-20s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 	@printf '\n'
 
@@ -44,7 +44,7 @@ bootstrap: ## Install backend, frontend and contract dependencies
 	$(UV) sync --project $(BACKEND) --all-extras
 	$(NPM) ci
 	cd $(CONTRACTS) && $(FORGE) install --no-git || true
-	@echo "bootstrap done — next: make up"
+	@echo "bootstrap done - next: make up"
 
 # ── Containers ──────────────────────────────────────────────────────────────
 up: ## Start every service and wait for it to be healthy

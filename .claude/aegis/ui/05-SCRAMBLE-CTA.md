@@ -1,8 +1,8 @@
-# 05 — THE SCRAMBLE CTA (+ the `UNVERIFIABLE` reuse)
+# 05 - THE SCRAMBLE CTA (+ the `UNVERIFIABLE` reuse)
 
-This is the component from your screenshot — reference **C** at **0:12**, the *"Got Project? /
+This is the component from your screenshot - reference **C** at **0:12**, the *"Got Project? /
 LET'S TALK"* block. It is the best piece of motion in the four references, and it gets used twice
-in Aegis: once as the closing CTA, and once — repurposed — as the visual signature of the
+in Aegis: once as the closing CTA, and once - repurposed - as the visual signature of the
 product's most important state.
 
 ---
@@ -16,11 +16,11 @@ Frame-by-frame at 6fps across 0:09–0:16, the mechanics are:
 3. The transition is **not** a fade of the whole word. Each character is handled independently:
    outgoing characters drop out **in randomised order**, not left-to-right, some passing through a
    dimmed intermediate state; incoming characters arrive **in a different randomised order**.
-   Mid-transition frames show genuine hybrids — `LP⌐ G`, `LE S K` — letters from both phrases on
+   Mid-transition frames show genuine hybrids - `LP⌐ G`, `LE S K` - letters from both phrases on
    screen at once at different opacities and slight baseline offsets.
 4. Characters hold their **horizontal slot** during the swap, so the line never reflows. The
    jitter is vertical and sub-pixel-ish, a few pixels at most.
-5. Flanking both sides: **four nested arcs** per side, like `(((` and `)))` — thin white strokes,
+5. Flanking both sides: **four nested arcs** per side, like `(((` and `)))` - thin white strokes,
    low opacity, breathing in a slow staggered pulse. Sonar.
 6. A **capsule cursor** carrying a label (`START ●` in your screenshot) rides over the type.
 7. Background pure black, type white, geometric grotesk, very large, tight tracking.
@@ -28,7 +28,7 @@ Frame-by-frame at 6fps across 0:09–0:16, the mechanics are:
 
 ---
 
-## 2. Aegis version — the closing CTA
+## 2. Aegis version - the closing CTA
 
 Same mechanics, Aegis content. This is section `06/06`, full-bleed `--ink-900`, `100svh` minus nav.
 
@@ -48,7 +48,7 @@ Same mechanics, Aegis content. This is section `06/06`, full-bleed `--ink-900`, 
         NO CARD REQUIRED · TEST MODE · ₹0 TO TRY           ← micro
 ```
 
-Cycling phrases — each is a real thing the product does, so the cycle *informs* rather than
+Cycling phrases - each is a real thing the product does, so the cycle *informs* rather than
 decorates:
 
 ```ts
@@ -78,7 +78,7 @@ Straight from your screenshot: a pill with a leading dot and a label. The dot is
 
 ---
 
-## 3. `ScrambleText` — implementation
+## 3. `ScrambleText` - implementation
 
 One component serves both uses. Two modes: `cycle` (the CTA) and `unrest` (the `UNVERIFIABLE`
 chip, §4).
@@ -89,8 +89,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 
 /** Glyphs the scramble draws from. Deliberately includes the target alphabet plus
- *  a few technical marks — it should look like a machine resolving, not like static. */
-const POOL = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789/\\|<>—+·";
+ *  a few technical marks - it should look like a machine resolving, not like static. */
+const POOL = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789/\\|<>-+·";
 
 const rand = (s: string) => s[Math.floor(Math.random() * s.length)];
 
@@ -125,7 +125,7 @@ export function ScrambleText({
     const from = chars.slice();
     const to = target.padEnd(width).split("");
 
-    /* Each slot gets its own randomised start and end frame — this is what
+    /* Each slot gets its own randomised start and end frame - this is what
        produces the reference's out-of-order dissolve. */
     const plan = to.map((_, i) => {
       const start = Math.random() * 0.45;            // 0–45% of the swap
@@ -170,7 +170,7 @@ export function ScrambleText({
 ```css
 .sc-ch {
   display:inline-block;
-  width:.62em;                       /* fixed slot — the line never reflows */
+  width:.62em;                       /* fixed slot - the line never reflows */
   text-align:center;
   transition:opacity 90ms linear;
   font-variant-ligatures:none;
@@ -189,12 +189,12 @@ Implementation notes that matter:
   `setInterval`s will drop frames.
 - `aria-label` carries the resolved phrase; every glyph span is `aria-hidden`. A screen reader must
   never be read a wall of random characters.
-- `font-variant-ligatures: none` — otherwise pairs like `TT` or `fi` re-ligate mid-scramble and
+- `font-variant-ligatures: none` - otherwise pairs like `TT` or `fi` re-ligate mid-scramble and
   the slot width breaks.
 
 ---
 
-## 4. The reuse — `UNVERIFIABLE` that never settles
+## 4. The reuse - `UNVERIFIABLE` that never settles
 
 This is the idea worth building the design around.
 
@@ -223,8 +223,8 @@ if (mode === "unrest") {
 ```
 
 **Why this is the right decision.** Aegis's entire pitch is *"it did not guess and it did not
-block — it said what it could not verify."* A static amber badge says "warning." A label that
-cannot hold still says *the machine is still not sure* — which is the literal truth of the state.
+block - it said what it could not verify."* A static amber badge says "warning." A label that
+cannot hold still says *the machine is still not sure* - which is the literal truth of the state.
 It is the only element in the product that never reaches rest, and it is the only one that
 shouldn't. Combined with amber being the sole hue that appears nowhere decorative, the escalation
 moment in the demo video is unmistakable without a word of narration.
@@ -232,7 +232,7 @@ moment in the demo video is unmistakable without a word of narration.
 Constraints:
 - **One glyph at a time, 90ms, no layout shift.** If it reads as "broken text" you have overdone
   it. Subtle enough that a viewer notices it on the second look.
-- Never on `PASS` or `FAIL`. Never on more than the chips currently in view — pause the loop when
+- Never on `PASS` or `FAIL`. Never on more than the chips currently in view - pause the loop when
   the chip leaves the viewport (`useInView`) so a 40-row table isn't running 40 timers.
 - **Reduced motion: the jitter stops entirely.** The chip instead gains a static `?` glyph and a
   `1px dashed var(--sig-unverified-edge)` border. Same message, no motion.
@@ -276,7 +276,7 @@ export function SonarArcs({ side = "left", count = 4 }:
 ```
 
 Pulse: `opacity [0.10, 0.34, 0.10]`, `scale [0.96, 1.06, 0.96]`, `2.8s`, infinite, `easeInOut`,
-`180ms` stagger per arc — outward-travelling. Under reduced motion they hold static at `0.22`.
+`180ms` stagger per arc - outward-travelling. Under reduced motion they hold static at `0.22`.
 
 **Second use:** the same arcs, at `--sig-unverified`, flank the "awaiting human review" empty state
 in the review queue. Sonar = *listening for a decision*. Reusing one motif for two related meanings
@@ -290,12 +290,12 @@ is what makes a design system feel authored.
 |---|---|---|
 | 0ms | Corner metadata + rule | `blurUp` / `scaleX` |
 | 120ms | Label (`Got a deal you don't trust?`) | `blurUp` |
-| 240ms | Display line — first phrase resolves from full scramble | `ScrambleText` initial resolve, `900ms` |
+| 240ms | Display line - first phrase resolves from full scramble | `ScrambleText` initial resolve, `900ms` |
 | 240ms | Sonar arcs fade in and begin pulsing | `opacity 0→1`, `--d-reveal` |
 | 700ms | Capsule button | `chipPop` |
 | 820ms | Micro line beneath | `dropIn` |
 
-The section starts cycling only **after** it enters the viewport (`useInView`, `once: false` here —
+The section starts cycling only **after** it enters the viewport (`useInView`, `once: false` here -
 this is the one place a repeating animation is correct, since it's an ambient loop, not an
 entrance). Pause the cycle when out of view to save cycles on mobile.
 
@@ -308,7 +308,7 @@ entrance). Pause the cycle when out of view to save cycles on mobile.
 | Landing, section 06/06 | `cycle` | `OPEN A DEAL` / `FUND ESCROW` / `SEE THE PROOF` |
 | Clause verdict chips | `unrest` | `UNVERIFIABLE` only |
 | Review queue empty state | `cycle`, slow (`holdMs: 4000`) | `AWAITING REVIEW` / `NOTHING QUEUED` + amber arcs |
-| Verification in progress | `cycle`, fast (`holdMs: 900`) | `EXTRACTING` / `EVALUATING` / `SIGNING` — mirrors the real pipeline stage, driven by SSE |
+| Verification in progress | `cycle`, fast (`holdMs: 900`) | `EXTRACTING` / `EVALUATING` / `SIGNING` - mirrors the real pipeline stage, driven by SSE |
 
 That last one is worth doing properly: while the verifier runs, the headline scrambles between the
 actual pipeline stage names streamed from the backend. The scramble stops being decoration and

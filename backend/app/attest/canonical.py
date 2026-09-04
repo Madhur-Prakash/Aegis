@@ -1,4 +1,4 @@
-"""Canonical JSON — written once, used everywhere (spec §18).
+"""Canonical JSON - written once, used everywhere (spec §18).
 
 A hash that depends on dict ordering is worthless.  Rules:
 
@@ -70,5 +70,5 @@ def sha256_hex(data: bytes | str) -> str:
 
 
 def payload_hash(payload: Any) -> str:
-    """``sha256(canonical_json(payload))`` — the project's one content hash."""
+    """``sha256(canonical_json(payload))`` - the project's one content hash."""
     return sha256_hex(canonical_bytes(payload))

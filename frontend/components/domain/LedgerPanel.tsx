@@ -72,7 +72,7 @@ export function LedgerPanel({ dealId }: { dealId: string }) {
 
           {!verdict.data.ok ? (
             <div className="stack" style={{ gap: "var(--sp-2)" }}>
-              <Meta label={t("provenance.reason")} value={verdict.data.reason ?? "—"} />
+              <Meta label={t("provenance.reason")} value={verdict.data.reason ?? "-"} />
               <Meta
                 label={t("provenance.expected")}
                 value={<Hash value={verdict.data.expected} head={8} tail={8} />}
@@ -81,7 +81,7 @@ export function LedgerPanel({ dealId }: { dealId: string }) {
                 label={t("provenance.found")}
                 value={
                   <span className="num tamper-underline">
-                    {verdict.data.found ? verdict.data.found.slice(0, 16) : "—"}…
+                    {verdict.data.found ? verdict.data.found.slice(0, 16) : "-"}…
                   </span>
                 }
               />

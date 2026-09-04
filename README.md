@@ -1,4 +1,4 @@
-# Aegis — programmable escrow for agentic commerce
+# Aegis - programmable escrow for agentic commerce
 
 **Every rupee has a provable reason.**
 
@@ -8,14 +8,14 @@ moves the money, and every decision is signed, hash-chained and anchored.
 > Every number in this document was produced by `make eval` on **2026-09-04T15:00:46+00:00** and is
 > reproduced in [`backend/evals/out/RESULTS.md`](backend/evals/out/RESULTS.md). Nothing here is
 > typed by hand. The run used the **deterministic offline adapter** (`AI_PROVIDER=fixture`) because
-> no model key was configured — see [Which numbers are real](#which-numbers-are-real) and
+> no model key was configured - see [Which numbers are real](#which-numbers-are-real) and
 > [`docs/LIMITATIONS.md`](docs/LIMITATIONS.md).
 
 ---
 
 ## The thesis
 
-Agents are starting to transact. The blocker is not payments — payments work. The blocker is that
+Agents are starting to transact. The blocker is not payments - payments work. The blocker is that
 **an agent's judgement is not an auditable basis for moving money.** When a buyer's agent and a
 seller's agent agree that a milestone is complete, there is nothing a bank, a regulator or a
 disappointed counterparty can inspect afterwards. "The AI decided" is not an audit answer.
@@ -64,7 +64,7 @@ Enforced in code **and** proven by a test. This is the strongest page in the rep
 | **I6** | Every money operation is idempotent on `(milestone_id, direction, attempt_no)`. 20 simultaneous release attempts ⇒ exactly 1 payout and exactly 1 rail call. | Unique index + Redis lock + `IdempotencyRecord` + concurrency test |
 | **I7** | On-chain data is hashes, ids, integers, enums and signatures only. Never names, emails, addresses, documents, invoice contents, messages or raw evidence. | Chain adapter signature accepts `bytes32`/ints only + lint test |
 | **I8** | The arbiter is advisory. `Dispute.human_decided_by` must be non-NULL before any dispute settlement. Overrides are logged with the delta. | DB constraint + settlement guard + test |
-| **I9** | Expected business failures return typed, machine-readable errors — never a bare 500. | Typed error envelope + API tests |
+| **I9** | Expected business failures return typed, machine-readable errors - never a bare 500. | Typed error envelope + API tests |
 | **I10** | State machines are explicit transition tables. No scattered state-mutating `if`s. Unknown `(state, event)` raises `IllegalTransition`. | Table-driven transitions + exhaustiveness test |
 | **I11** | No secrets committed. `.env.example` only, test-mode credentials only. Logs never contain passwords, tokens, API keys, private keys, raw PII or raw evidence. | Secret scan in CI + logifyx masking + log-assertion test |
 | **I12** | **Tenant isolation.** No user may read or write another organization's deals, evidence, attestations, payouts, ledger records, messages or notifications. Every query is tenant-scoped. | Repository-layer org scoping + a dedicated cross-tenant test suite |
@@ -85,7 +85,7 @@ Enforced in code **and** proven by a test. This is the strongest page in the rep
 | I9 | [`backend/app/common/errors.py`](backend/app/common/errors.py) | `tests/api/test_routes.py` (29 tests) |
 | I10 | [`backend/app/deals/states.py`](backend/app/deals/states.py) | Suite B check 1: **81 deal pairs and 88 milestone pairs enumerated; 11 and 13 legal** |
 | I11 | [`backend/app/common/logging.py`](backend/app/common/logging.py) + [`scripts/secret_scan.py`](backend/scripts/secret_scan.py) | `tests/security/test_log_masking.py` (11 tests) + a CI step that **plants a fake Razorpay live key and requires the scan to fail** |
-| I12 | [`backend/app/db/repo.py`](backend/app/db/repo.py) | `tests/security/test_tenant_isolation.py` (10 tests, cross-tenant reads return **404, not 403**), enumerated from the OpenAPI document so a new unscoped route fails automatically — plus a test asserting the enumeration is **not empty**, because it once was ([ADR-008c](docs/DECISIONS.md)) |
+| I12 | [`backend/app/db/repo.py`](backend/app/db/repo.py) | `tests/security/test_tenant_isolation.py` (10 tests, cross-tenant reads return **404, not 403**), enumerated from the OpenAPI document so a new unscoped route fails automatically - plus a test asserting the enumeration is **not empty**, because it once was ([ADR-008c](docs/DECISIONS.md)) |
 | I13 | `outbox_events` + [`backend/app/relay.py`](backend/app/relay.py) | `tests/integration/test_outbox_and_seed.py`, Suite B check 9 (**crash injection: row survives, exactly-once effect**) |
 
 ---
@@ -104,16 +104,16 @@ All from `make eval`. Regenerate with `cd backend && uv run python -m evals.run_
 | Escalation rate | **0.24** (target band 0.12–0.25, in band) |
 | Brier score (confidence vs release-correctness) | **0.0288** |
 | Decisions resolved by deterministic pre-checks | **10.67%** (16/150, at zero AI cost) |
-| Suite B — settlement integrity | **PASS** (9/9) |
-| Suite C — provenance integrity | **PASS** (5/5) |
+| Suite B - settlement integrity | **PASS** (9/9) |
+| Suite C - provenance integrity | **PASS** (5/5) |
 | Risk model selected | **logistic**, test AUC **0.7435** |
-| Cost per verification (measured) | **0.0 USD** — no provider was called |
+| Cost per verification (measured) | **0.0 USD** - no provider was called |
 | Cost per verification (projected at pinned prices) | **INR 2.5138** |
-| Prompt-cache hit rate | **0.0** — there was no provider to cache against |
+| Prompt-cache hit rate | **0.0** - there was no provider to cache against |
 | Backend tests | **259 passed** |
 | Contract tests | **24 passed** |
 
-### Confusion matrix — 150 held-out bundles
+### Confusion matrix - 150 held-out bundles
 
 | expected \ decided | RELEASE | REJECT | ESCALATE |
 |---|---|---|---|
@@ -146,14 +146,14 @@ seed** (`data/generated/calibration`). The 150 evaluation bundles are never used
 | 0.00–0.20 | 37 | 0.158 | 0.000 |
 | 0.20–0.35 | 15 | 0.323 | 0.000 |
 | 0.35–0.50 | 2 | 0.357 | 0.000 |
-| 0.50–0.65 | 0 | — | — |
-| 0.65–0.85 | 0 | — | — |
+| 0.50–0.65 | 0 | - | - |
+| 0.65–0.85 | 0 | - | - |
 | 0.85–1.00 | 96 | 0.881 | **1.000** |
 
 The map is anchored so that `confidence >= 0.85` ⟺ `p(release is correct) == 1` on the calibration
 corpus. Measured anchors for this fit: `r0 = 0.816167`, `r1 = 0.979`, class-separable.
 
-### Risk model — reported, not tuned away
+### Risk model - reported, not tuned away
 
 | model | test AUC | test PR-AUC | test Brier |
 |---|---|---|---|
@@ -171,7 +171,7 @@ what is actually scoring deals.
 490 model calls across 150 bundles (3.267 per bundle). Measured spend **0.0 USD**, because the
 deterministic offline adapter performs no network call. Applying the pinned list prices for
 `claude-opus-5` / `claude-sonnet-5` to the token counts this run *did* measure projects
-**0.028566 USD (INR 2.5138) per verification** — a projection, clearly labelled as one.
+**0.028566 USD (INR 2.5138) per verification** - a projection, clearly labelled as one.
 
 | stage | n | p50 ms | p95 ms | max ms |
 |---|---|---|---|---|
@@ -180,7 +180,7 @@ deterministic offline adapter performs no network call. Applying the pinned list
 | clause_evaluation | 134 | 0.0 | 2.0 | 3.0 |
 | **end to end** | 150 | **2.0** | **6.0** | **26.0** |
 
-Verifier pipeline only — no database, no rail, no chain.
+Verifier pipeline only - no database, no rail, no chain.
 
 ---
 
@@ -191,16 +191,16 @@ This is the part most submissions leave out.
 | claim | status |
 |---|---|
 | Verifier accuracy, escalation rate, Brier, confusion matrix | **Measured** on 150 bundles containing real PDFs with a real text layer and real PNGs with real pixels. The extraction path is genuinely exercised. |
-| Suite B and Suite C integrity checks | **Measured** against real Postgres — triggers, CHECK constraints, row locking and crash injection. |
+| Suite B and Suite C integrity checks | **Measured** against real Postgres - triggers, CHECK constraints, row locking and crash injection. |
 | Risk AUC, PR-AUC, Brier, pricing tier distribution | **Measured** on a 2,000-deal synthetic corpus with a declared generative model ([`docs/DATA.md`](docs/DATA.md)). |
 | Latency | **Measured** wall-clock on the build machine. |
 | Cost per verification | **0.0 USD measured** (no provider called). The INR 2.5138 figure is a **projection** from measured token counts at pinned list prices. |
-| Prompt-cache hit rate | **0.0, and honestly so** — there is no cache to hit without a provider. The cache-control shape is asserted by `tests/unit/test_prompt_cache_contract.py`. |
+| Prompt-cache hit rate | **0.0, and honestly so** - there is no cache to hit without a provider. The cache-control shape is asserted by `tests/unit/test_prompt_cache_contract.py`. |
 | Model quality of a *live* LLM | **Not measured.** Set `AI_PROVIDER=anthropic` or `groq` with a key and re-run `make eval`. |
 | Rupee movement | **Simulated** in this configuration. See the rail table below. |
-| On-chain anchoring | **Queued, not confirmed** — no contract address is configured. Suite C verifies every queued anchor payload carries exactly the local attestation hash, so the moment a contract exists the right things get anchored. |
+| On-chain anchoring | **Queued, not confirmed** - no contract address is configured. Suite C verifies every queued anchor payload carries exactly the local attestation hash, so the moment a contract exists the right things get anchored. |
 
-### Payment rail — labelled per operation
+### Payment rail - labelled per operation
 
 The mode comes from `GET /api/v1/payments/rail` and is rendered in the UI as well as here, so the
 interface cannot claim a real payout while the backend simulates one.
@@ -294,7 +294,7 @@ Then:
 | Kafka UI | <http://localhost:8080> |
 
 `make help` lists every target. Nothing requires a paid key: with no `AI_API_KEY` the deterministic
-offline adapter runs, and with no Razorpay key the simulated rail runs — both labelled everywhere
+offline adapter runs, and with no Razorpay key the simulated rail runs - both labelled everywhere
 they appear.
 
 ### Signing in
@@ -308,8 +308,8 @@ with `DEMO_MODE=false` the route is never registered.
 
 ## The demo
 
-`make demo` drives the seeded deal — Meridian Apparel (Bengaluru) buying 2,500 cotton twill shirts
-from Tirupur Knitworks — through three milestones and every branch that matters. Measured output of
+`make demo` drives the seeded deal - Meridian Apparel (Bengaluru) buying 2,500 cotton twill shirts
+from Tirupur Knitworks - through three milestones and every branch that matters. Measured output of
 the recorded run:
 
 | step | outcome |
@@ -317,16 +317,16 @@ the recorded run:
 | Terms signed | `terms_hash 02cce074a972f7ac…` |
 | Risk scored | **0.0083** → `TIER_1`, 0.8% fee, 30% prefund; top factor `-1.183` "on-time rate 91% across their deals" |
 | Escrow funded | **INR 420,000.00** |
-| Milestone 01 — fabric procured | pre-checks **8/8**, 3 model calls, **RELEASE @ 0.879** → **INR 126,000.00** released, `sim_rel_a21033dd…` |
-| Milestone 02 — production complete | **ESCALATE @ 0.197**. Clause `c2` came back **UNVERIFIABLE**: *"4 photograph(s) cannot establish a count of 500; nothing in the pixels evidences a total, and nothing contradicts it either."* **No money moved.** |
+| Milestone 01 - fabric procured | pre-checks **8/8**, 3 model calls, **RELEASE @ 0.879** → **INR 126,000.00** released, `sim_rel_a21033dd…` |
+| Milestone 02 - production complete | **ESCALATE @ 0.197**. Clause `c2` came back **UNVERIFIABLE**: *"4 photograph(s) cannot establish a count of 500; nothing in the pixels evidences a total, and nothing contradicts it either."* **No money moved.** |
 | Human review | reviewer **APPROVED** with a written reason → **INR 168,000.00** released |
-| Milestone 03 — delivered & accepted | **RELEASE @ 0.865**, then the buyer **raised a dispute** over 60 units |
+| Milestone 03 - delivered & accepted | **RELEASE @ 0.865**, then the buyer **raised a dispute** over 60 units |
 | Settlement worker | **refused** the pending authorization, reason `MILESTONE_DISPUTED` |
-| Arbiter (advisory) | `PARTIAL` @ 0.74 — release INR 115,920.00, refund INR 10,080.00, with its arithmetic shown and **two open questions it could not answer** |
+| Arbiter (advisory) | `PARTIAL` @ 0.74 - release INR 115,920.00, refund INR 10,080.00, with its arithmetic shown and **two open questions it could not answer** |
 | Human resolution | approved the split, `override_delta 0` |
 | Final money | funded **420,000.00** = released **409,920.00** + refunded **10,080.00** + held **0.00** · `balanced: true` |
 | Ledger | **37 events**, `verify ok`, head `f4d78c5004c9e768…` |
-| Chain | **10 anchors queued, 0 confirmed** — `CONTRACT_ADDRESS / OPERATOR_PRIVATE_KEY not configured` |
+| Chain | **10 anchors queued, 0 confirmed** - `CONTRACT_ADDRESS / OPERATOR_PRIVATE_KEY not configured` |
 
 Step-by-step walkthrough with URLs: [`docs/DEMO.md`](docs/DEMO.md).
 
@@ -334,16 +334,16 @@ Step-by-step walkthrough with URLs: [`docs/DEMO.md`](docs/DEMO.md).
 
 ## What to look at first
 
-1. [`backend/app/settlement/guards.py`](backend/app/settlement/guards.py) — the only place a release
+1. [`backend/app/settlement/guards.py`](backend/app/settlement/guards.py) - the only place a release
    is decided. `decide()` takes exactly one argument, so there is no parameter through which an
    override could be threaded.
-2. [`backend/scripts/import_lint.py`](backend/scripts/import_lint.py) — and the CI step that plants a
+2. [`backend/scripts/import_lint.py`](backend/scripts/import_lint.py) - and the CI step that plants a
    violation to prove the lint fails.
-3. **The verification screen** — the clause table in source order, `UNVERIFIABLE` rendered with a
+3. **The verification screen** - the clause table in source order, `UNVERIFIABLE` rendered with a
    label that never stops moving, and the confidence arithmetic printed underneath.
-4. **The provenance screen** — press **Tamper one byte** and watch the digest mismatch, the row
+4. **The provenance screen** - press **Tamper one byte** and watch the digest mismatch, the row
    shake once and the Merkle proof refuse.
-5. [`backend/evals/suite_b/run.py`](backend/evals/suite_b/run.py) check 7 — 20 concurrent releases,
+5. [`backend/evals/suite_b/run.py`](backend/evals/suite_b/run.py) check 7 - 20 concurrent releases,
    one payout, one rail call.
 
 ---

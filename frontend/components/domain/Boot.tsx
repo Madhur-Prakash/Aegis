@@ -155,7 +155,7 @@ export function Boot({ onDone }: { onDone: () => void }) {
         }}
       >
         <span className="boot-corner boot-corner--tl nano">
-          {t("brand")} — {t("tagline")}
+          {t("brand")} - {t("tagline")}
         </span>
         <span className="boot-corner boot-corner--tr nano num">
           {String(Math.min(100, counter)).padStart(3, "0")}

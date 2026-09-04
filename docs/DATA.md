@@ -40,7 +40,7 @@ real. It now extracts a palette and identifies the subject colour by excluding b
 
 ---
 
-## 2. Base rates — every one declared
+## 2. Base rates - every one declared
 
 Marked `[sourced]` if it comes from a published figure, `[assumed]` if it is a judgement call. Every
 rate below is `[assumed]`, and this document says so rather than implying provenance that does not
@@ -74,7 +74,7 @@ p  = 1 / (1 + exp(-z))
 Terms are centred on the corpus means so the intercept alone sets the base rate.
 
 **This is published for a reason.** Because the generator is logistic in exactly these features, the
-logistic model is *correctly specified* and the gradient-boosted model has nothing extra to exploit —
+logistic model is *correctly specified* and the gradient-boosted model has nothing extra to exploit -
 which is why LightGBM loses (test AUC 0.7261 vs 0.7435). That is a property of the corpus, not
 evidence that boosting is a bad choice on real data, and the README says so instead of presenting the
 baseline win as a triumph.
@@ -98,7 +98,7 @@ Hyperparameters and the choice between the two models are decided on validation 
 ## 3. The 150 evaluation bundles
 
 100 clean, 50 adversarial. Every adversarial bundle belongs to exactly one category, and every
-category is reported separately in `RESULTS.md` — an aggregate accuracy can hide a category that
+category is reported separately in `RESULTS.md` - an aggregate accuracy can hide a category that
 fails completely.
 
 | category | n | what it tests |
@@ -108,12 +108,12 @@ fails completely.
 | `altered_amount` | 7 | A total edited after issue. |
 | `right_type_wrong_milestone` | 7 | A genuine document for a *different* milestone. |
 | `fabricated_totals` | 7 | Line items that do not sum to the stated total. |
-| `low_quality_scan` | 7 | A genuinely blurred scan — extraction quality drops for real. |
+| `low_quality_scan` | 7 | A genuinely blurred scan - extraction quality drops for real. |
 | `photos_cannot_establish_quantity` | 7 | Four photographs cannot evidence a count of 500. **The correct answer is `UNVERIFIABLE` → escalate, not reject.** |
 | `valid_but_unusual` | 7 | Odd but legitimate. Rejecting these is the failure mode. |
 
 Labels are derived from the **evidence**, following the same published rubric the prose prompt
-describes — so a correct pipeline can reach them and an incorrect one cannot be rescued by the label.
+describes - so a correct pipeline can reach them and an incorrect one cannot be rescued by the label.
 The fixture provider has no access to the labels.
 
 `photos_cannot_establish_quantity` and `valid_but_unusual` exist to keep the system honest in both
@@ -135,7 +135,7 @@ The pricing tier distribution over the 2,000-deal portfolio, measured:
 | TIER_1 | 1093 | 54.6% | 4.7% | 0.8 | 0 | 30 |
 | TIER_2 | 338 | 16.9% | 17.5% | 1.5 | 3 | 50 |
 | TIER_3 | 417 | 20.8% | 36.0% | 2.5 | 7 | 100 |
-| DECLINE | 152 | 7.6% | 67.1% | — | — | — |
+| DECLINE | 152 | 7.6% | 67.1% | - | - | - |
 
 The observed bad rate rises monotonically with tier, which is the only property that makes the tiers
 mean anything.

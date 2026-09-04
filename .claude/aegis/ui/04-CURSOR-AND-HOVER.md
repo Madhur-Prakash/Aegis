@@ -1,4 +1,4 @@
-# 04 — CURSOR & HOVER STATES
+# 04 - CURSOR & HOVER STATES
 
 Both taken from **reference D** (OUTFIT), with the list-hover bar from **reference C** (hobro).
 
@@ -15,12 +15,12 @@ alternate frame.
 
 | State | Size | Fill | Label | Trigger |
 |---|---|---|---|---|
-| `rest` | 8px | solid | — | default |
+| `rest` | 8px | solid | - | default |
 | `hover` | 48px | solid | optional | `[data-cursor]` element |
 | `label` | auto × 32px pill | solid | required | `[data-cursor="label:VIEW PROOF"]` |
 | `press` | 36px | solid | inherited | `pointerdown` |
-| `text` | 2px × 22px bar | solid | — | inputs, `[contenteditable]` |
-| `hidden` | 0 | — | — | pointer leaves window |
+| `text` | 2px × 22px bar | solid | - | inputs, `[contenteditable]` |
+| `hidden` | 0 | - | - | pointer leaves window |
 
 ### 1.2 The colour decision
 
@@ -69,7 +69,7 @@ export function Cursor() {
   const sy = useSpring(y, SPRING.cursor);
 
   useEffect(() => {
-    // Pointer devices only — never on touch (spec: mobile must use native affordances).
+    // Pointer devices only - never on touch (spec: mobile must use native affordances).
     const fine = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
     if (!fine) return;
     setEnabled(true);
@@ -140,7 +140,7 @@ export function Cursor() {
 }
 ```
 
-`width: "auto"` inside a Framer `animate` will not tween smoothly — for the `label` mode, let the
+`width: "auto"` inside a Framer `animate` will not tween smoothly - for the `label` mode, let the
 pill size itself from content and animate only `opacity` and `scale` on the label span. Accept the
 instant width change; reference D does the same and it reads as a snap, which is correct.
 
@@ -167,19 +167,19 @@ Label copy is always **two words maximum**, uppercase, verb-first: `VIEW PROOF`,
 - [ ] `:focus-visible` outlines still render while the custom cursor is active. Keyboard users are
       not served by a cursor.
 - [ ] `cursor: none` is applied via `body[data-cursor="on"]` only, so if the component fails to
-      mount the native cursor is never lost. **This matters** — a JS error that hides the cursor
+      mount the native cursor is never lost. **This matters** - a JS error that hides the cursor
       with no replacement makes the app unusable.
 - [ ] Never gate an interaction on the custom cursor. It is decoration over real affordances.
 
 ---
 
-## 2. Item hover — the panel wipe (reference D)
+## 2. Item hover - the panel wipe (reference D)
 
 Measured: on hover-enter a **panel wipes horizontally out from behind the media** (~420ms), the
 **media crossfades to an alternate frame** (~260ms) with a slight scale-down from 1.04, and the
 cursor becomes a labelled disc. Nothing translates; nothing gains a shadow.
 
-Aegis translation — the hovered thing is a **milestone card** or an **evidence artifact**, and the
+Aegis translation - the hovered thing is a **milestone card** or an **evidence artifact**, and the
 panel is not decorative: **it is tinted with the item's semantic state.** So hovering a milestone
 tells you its state through the wipe colour itself.
 
@@ -197,7 +197,7 @@ export function HoverPanelCard({
       className="hcard" data-cursor={`label:${cursorLabel}`}
       initial="rest" whileHover={reduced ? "rest" : "hover"} whileFocus="hover" tabIndex={0}
     >
-      {/* the wipe panel — sits behind the media, anchored to its left edge */}
+      {/* the wipe panel - sits behind the media, anchored to its left edge */}
       <motion.span
         className="hcard-panel" variants={panelWipe}
         style={{ background: `var(--sig-${tone}-tint)`,
@@ -236,17 +236,17 @@ export function HoverPanelCard({
 
 Rules:
 - The panel is **inset negatively** (`-6px -10px`) so it reads as a backdrop growing out from
-  behind the item — reference D's exact effect. Never a border-radius glow or a shadow.
+  behind the item - reference D's exact effect. Never a border-radius glow or a shadow.
 - `transform-origin: 0% 50%` gives the left-to-right wipe. Mirror to `100% 50%` for right-aligned
   grid items so the wipe always travels *outward* from the page centre.
-- `whileFocus="hover"` — the keyboard gets the same state. Do not leave focus users with a dead
+- `whileFocus="hover"` - the keyboard gets the same state. Do not leave focus users with a dead
   card.
 - No `translateY` on hover. Reference D lifts nothing, and the restraint is what makes it feel
   expensive.
 
 ---
 
-## 3. List hover — the magic bar (reference C)
+## 3. List hover - the magic bar (reference C)
 
 Reference C's service list slides a filled bar between rows and inverts the row's text. Perfect for
 Aegis's clause table, review queue and nav. Uses Framer's shared layout so the bar interpolates
@@ -293,7 +293,7 @@ export function MagicList({ items }: { items: { id: string; label: string; meta:
 ```
 
 - The bar is `--bone-100` and the row text inverts to `--ink-900`. Full inversion, exactly as in
-  reference C — a subtle tint would lose the effect.
+  reference C - a subtle tint would lose the effect.
 - `layoutId` makes the bar **slide** between rows instead of fading. That slide is the whole
   point; without it this is an ordinary hover.
 - Reduced motion → no bar; the row gets `background: var(--ink-700)` instead.
@@ -316,7 +316,7 @@ Restraint elsewhere so the two effects above stay special.
 | Nav item | `magicBar` (§3) |
 | Disabled | `opacity: .45`, `cursor: not-allowed`, no hover response, `data-cursor` omitted |
 
-Every hover has a `:focus-visible` equivalent. Every hover transition is `--d-fast` — hover
+Every hover has a `:focus-visible` equivalent. Every hover transition is `--d-fast` - hover
 feedback slower than 200ms feels laggy.
 
 ---
@@ -330,5 +330,5 @@ On `pointer: coarse`:
 - The magic bar binds to the pressed row on `:active`.
 - Minimum touch target **44 × 44px**; increase `.mrow` padding to `--sp-5` below `768px`.
 - Nothing may be reachable only via hover. Every hover-revealed action also exists as a visible
-  control or inside a tap-opened sheet — a hover-only "view proof" affordance is inaccessible on a
+  control or inside a tap-opened sheet - a hover-only "view proof" affordance is inaccessible on a
   phone, and the spec requires the full flow to work at 375px.

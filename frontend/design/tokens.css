@@ -1,5 +1,5 @@
 /* ─────────────────────────────────────────────────────────────────────────
-   AEGIS DESIGN TOKENS — the only file in the project that defines a colour,
+   AEGIS DESIGN TOKENS - the only file in the project that defines a colour,
    a size, or a radius. Components reference tokens; never literals.
    Dark is the default. Light inverts neutrals; semantic hues darken for AA.
    ───────────────────────────────────────────────────────────────────────── */
@@ -18,7 +18,7 @@
   --bone-100: #F2EFE9;
   --white:    #FFFFFF;
 
-  /* ── Semantic hues — the ONLY colour in the product ───────── */
+  /* ── Semantic hues - the ONLY colour in the product ───────── */
   --sig-pass:        #4FD1A5;
   --sig-unverified:  #FFC24B;
   --sig-fail:        #FF4A4A;
@@ -86,7 +86,7 @@
   --z-toast: 50; --z-cursor: 90; --z-boot: 100;
 }
 
-/* System-preference dark: already the default — nothing to redefine. */
+/* System-preference dark: already the default - nothing to redefine. */
 
 /* Explicit light theme */
 :root[data-theme="light"] {

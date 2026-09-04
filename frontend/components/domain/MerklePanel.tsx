@@ -258,7 +258,7 @@ export function MerklePanel({ artifacts, root }: { artifacts: Artifact[]; root: 
                 <span className={tamper.ok ? "num" : "num tamper-underline"}>
                   {tamper.serverHash
                     ? `${tamper.serverHash.slice(0, 8)}…${tamper.serverHash.slice(-8)}`
-                    : "—"}
+                    : "-"}
                 </span>
               }
             />

@@ -56,14 +56,14 @@ export function ChainPanel({ dealId }: { dealId: string }) {
                 </span>
               }
             />
-            <Meta label={t("chain.dealId")} value={state.data.chain_deal_id ?? "—"} />
+            <Meta label={t("chain.dealId")} value={state.data.chain_deal_id ?? "-"} />
           </div>
 
           {!state.data.chain_available ? (
             <p className="table-note">
               {t("chain.unavailable")}
               {state.data.chain_unavailable_reason
-                ? ` — ${state.data.chain_unavailable_reason}`
+                ? ` - ${state.data.chain_unavailable_reason}`
                 : ""}
             </p>
           ) : null}

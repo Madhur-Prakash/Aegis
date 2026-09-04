@@ -32,7 +32,7 @@ DECISION_ENUM = {"NONE": 0, "RELEASE": 1, "REJECT": 2, "ESCALATE": 3}
 
 
 def deal_id_bytes32(deal_id: str) -> str:
-    """A UUID string becomes a bytes32 by keccak — never truncated."""
+    """A UUID string becomes a bytes32 by keccak - never truncated."""
     return "0x" + keccak(text=str(deal_id)).hex()
 
 

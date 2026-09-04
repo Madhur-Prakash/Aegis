@@ -1,7 +1,7 @@
-# AEGIS — FULL BUILD / BUILDER-READY MASTER PROMPT
+# AEGIS - FULL BUILD / BUILDER-READY MASTER PROMPT
 
-> **Programmable escrow for agentic commerce.** Two parties who do not trust each other — one or
-> both represented by AI agents — transact through an AI-mediated milestone escrow. INR settles on
+> **Programmable escrow for agentic commerce.** Two parties who do not trust each other - one or
+> both represented by AI agents - transact through an AI-mediated milestone escrow. INR settles on
 > Razorpay test-mode rails. The deal's rulebook and every AI decision's provenance are anchored
 > on-chain so the whole thing can be independently audited later.
 >
@@ -28,10 +28,10 @@ Rules of engagement:
 2. **Do not ask me to implement missing subsystems later.** Everything in this document is in
    scope for this build.
 3. **Never violate section 3 (INVARIANTS).** They are load-bearing safety properties enforced in
-   code, DB constraints, CI checks and tests — not style preferences.
+   code, DB constraints, CI checks and tests - not style preferences.
 4. **Never report a number you did not measure.** Every metric in the README comes from
    `make eval`. Fabricating a metric, a transaction hash, a payout, or a test result is the single
-   worst outcome of this build — worse than an unfinished feature.
+   worst outcome of this build - worse than an unfinished feature.
 5. **When the spec is ambiguous, choose the option that makes money movement safer**, record the
    decision in `docs/DECISIONS.md`, and continue.
 6. **Do not add anything in section 38 (NO FEATURE CREEP).**
@@ -67,7 +67,7 @@ met; the seller will not cut fabric before seeing money. Normally a broker takes
 never happens.
 
 The 2026 problem on top of it: **the buyer may be an AI agent.** So a new question appears that
-no existing system can answer — *who authorized this payment, on what evidence, and can you prove
+no existing system can answer - *who authorized this payment, on what evidence, and can you prove
 it six months from now?*
 
 Aegis must be able to answer all ten of these, for any rupee that moved:
@@ -84,7 +84,7 @@ verified later, by someone who trusts neither party?
 deterministic settlement engine validates that attestation and performs the financial action.
 This separation is mandatory and mechanically enforced (I2).
 
-### Why a blockchain is here — put this in the README and say it in the first 20 seconds of the video
+### Why a blockchain is here - put this in the README and say it in the first 20 seconds of the video
 
 > Money never touches the chain. Rupees move on Razorpay the entire time. The chain holds exactly
 > two things: the rulebook of the deal, so neither party can quietly edit it after the fact; and a
@@ -112,7 +112,7 @@ the strongest single page of the submission.
 | **I6** | Every money operation is idempotent on `(milestone_id, direction, attempt_no)`. 20 simultaneous release attempts ⇒ exactly 1 payout and exactly 1 rail call. | Unique index + Redis lock + `IdempotencyRecord` + concurrency test |
 | **I7** | On-chain data is hashes, ids, integers, enums and signatures only. Never names, emails, addresses, documents, invoice contents, messages or raw evidence. | Chain adapter signature accepts `bytes32`/ints only + lint test |
 | **I8** | The arbiter is advisory. `Dispute.human_decided_by` must be non-NULL before any dispute settlement. Overrides are logged with the delta. | DB constraint + settlement guard + test |
-| **I9** | Expected business failures return typed, machine-readable errors — never a bare 500. | Typed error envelope + API tests |
+| **I9** | Expected business failures return typed, machine-readable errors - never a bare 500. | Typed error envelope + API tests |
 | **I10** | State machines are explicit transition tables. No scattered state-mutating `if`s. Unknown `(state, event)` raises `IllegalTransition`. | Table-driven transitions + exhaustiveness test |
 | **I11** | No secrets committed. `.env.example` only, test-mode credentials only. Logs never contain passwords, tokens, API keys, private keys, raw PII or raw evidence. | Secret scan in CI + logifyx masking + log-assertion test |
 | **I12** | **Tenant isolation.** No user may read or write another organization's deals, evidence, attestations, payouts, ledger records, messages or notifications. Every query is tenant-scoped. | Repository-layer org scoping + a dedicated cross-tenant test suite |
@@ -144,7 +144,7 @@ aegis/
 ├── docker-compose.dev.yml         # hot reload overrides
 ├── .env.example                   # complete, no realistic-looking fake secrets
 ├── .gitignore  .dockerignore
-├── ui/                            # THE DESIGN PACK — read before any frontend code (§25)
+├── ui/                            # THE DESIGN PACK - read before any frontend code (§25)
 │   ├── README.md  00-DESIGN-SYSTEM.md  01-MOTION-SYSTEM.md
 │   ├── 02-PRELOADER-AND-HERO.md  03-DROP-IN-REVEALS.md
 │   ├── 04-CURSOR-AND-HOVER.md  05-SCRAMBLE-CTA.md
@@ -153,7 +153,7 @@ aegis/
 ├── docs/
 │   ├── ARCHITECTURE.md  DATA.md  DECISIONS.md  DEMO.md
 │   ├── SECURITY.md  API.md  OPERATIONS.md  LIMITATIONS.md
-│   └── UI_MOTION.md               # §25 — copy of ui/ (the design pack)
+│   └── UI_MOTION.md               # §25 - copy of ui/ (the design pack)
 ├── contracts/                     # Foundry
 │   ├── src/AegisEscrow.sol
 │   ├── test/  script/  foundry.toml
@@ -166,7 +166,7 @@ aegis/
 │   │   ├── relay.py               # outbox → Kafka relay entrypoint
 │   │   ├── config/                # pydantic-settings, one Settings object
 │   │   ├── common/                # logging, errors, canonical json, ids, deps, pagination
-│   │   ├── api/v1/                # routers only — thin
+│   │   ├── api/v1/                # routers only - thin
 │   │   ├── auth/  users/  organizations/
 │   │   ├── deals/                 # state machine, transition table, guards
 │   │   ├── evidence/              # upload, storage, merkle bundling
@@ -188,7 +188,7 @@ aegis/
 │   ├── package.json  next.config.ts  tailwind.config.ts
 │   ├── app/                       # App Router
 │   ├── components/                # ui/ (shadcn) + domain/
-│   ├── design/                    # §25 — tokens.css + motion.ts  ← the ONLY visual-identity files
+│   ├── design/                    # §25 - tokens.css + motion.ts  ← the ONLY visual-identity files
 │   │                              #        copy both VERBATIM from ui/00 and ui/01
 │   ├── lib/  hooks/  i18n/{en.json,hi.json}
 ├── data/{fixtures,generated}/
@@ -200,7 +200,7 @@ aegis/
 
 ---
 
-# 5. PYTHON ENVIRONMENT — uv
+# 5. PYTHON ENVIRONMENT - uv
 
 Use **uv** for dependency and environment management. `pyproject.toml` + committed `uv.lock` are
 the dependency definition. A hand-maintained `requirements.txt` is not acceptable as the primary
@@ -221,7 +221,7 @@ Required backend dependencies (minimum): `fastapi`, `uvicorn[standard]`, `sqlalc
 
 ---
 
-# 6. LOGGING — logifyx
+# 6. LOGGING - logifyx
 
 Use **logifyx** (PyPI `logifyx`, ≥ 1.1.3) for all backend logging. Its native features map
 directly onto this project's requirements: structured output, automatic masking of sensitive
@@ -260,13 +260,13 @@ def get_logger(name: str, **context):
   `deal_id`, `milestone_id`, `attestation_id`, `settlement_event_id`, `payout_id`,
   `idempotency_key`, `kafka_message_id`.
 - Call `flush()` before any worker process exits and `shutdown()` in the FastAPI lifespan
-  teardown, or you will silently lose the last log lines — the ones you need after a crash.
+  teardown, or you will silently lose the last log lines - the ones you need after a crash.
 - The mask list above is the mechanical half of **I11**. Write a test that logs a payload
   containing each masked field and asserts the value does not appear in the emitted record.
 - Every financial operation must be traceable end to end through logs alone:
   `request_id → deal_id → milestone_id → attestation_id → settlement_event_id → payout_id → rail_ref`.
 - **Verify the exact API surface against the installed version before writing the wrapper.** If a
-  keyword above does not exist in 1.1.3, adapt the wrapper — never the call sites — and record
+  keyword above does not exist in 1.1.3, adapt the wrapper - never the call sites - and record
   what you changed in `docs/DECISIONS.md`. Because everything goes through `get_logger()`, the
   entire logging stack is swappable in one file.
 
@@ -275,7 +275,7 @@ decision, per rail call, per Kafka publish and consume, and per authorization fa
 
 ---
 
-# 7. DATABASE — POSTGRES + ALEMBIC
+# 7. DATABASE - POSTGRES + ALEMBIC
 
 PostgreSQL 16 is the sole source of truth for financial state. Redis and Kafka never hold
 authoritative state.
@@ -296,13 +296,13 @@ authoritative state.
 
 ---
 
-# 8. SEEDING — IDEMPOTENT AND RESUMABLE
+# 8. SEEDING - IDEMPOTENT AND RESUMABLE
 
 `make seed` must be safe to run any number of times, and safe to re-run after being interrupted
-halfway. Running `make seed` three times in a row produces the same database as running it once —
+halfway. Running `make seed` three times in a row produces the same database as running it once -
 no duplicate users, organizations, entities, deals, milestones, evidence or fixtures.
 
-Mechanism — implement all four parts:
+Mechanism - implement all four parts:
 
 1. **Deterministic ids.** Every seeded row gets a UUIDv5 derived from a stable namespace and a
    natural key: `uuid5(AEGIS_SEED_NS, "user:buyer@meridian.demo")`. Re-running recomputes the same
@@ -318,7 +318,7 @@ Mechanism — implement all four parts:
 4. **Advisory lock.** Wrap the whole run in `pg_advisory_lock` so two concurrent seeds cannot
    interleave.
 
-Also provide `make reset-seed` — drops and recreates the schema, re-runs migrations, re-seeds — as
+Also provide `make reset-seed` - drops and recreates the schema, re-runs migrations, re-seeds - as
 the explicit, clearly-labelled destructive path. It must never be required just because a seed run
 was interrupted.
 
@@ -345,7 +345,7 @@ application must lose nothing but cache warmth.
 
 ---
 
-# 10. KAFKA — THE PAYMENT AND SETTLEMENT BACKBONE
+# 10. KAFKA - THE PAYMENT AND SETTLEMENT BACKBONE
 
 Kafka is mandatory and must genuinely participate in the payment flow, not sit decoratively in the
 architecture diagram.
@@ -368,7 +368,7 @@ aegis.dlq.<topic>         # dead letters per topic
 Single broker in **KRaft mode** (no Zookeeper) for local development, plus `kafka-ui` for the
 demo. Create topics idempotently on startup.
 
-### The flow — implement exactly this
+### The flow - implement exactly this
 
 ```
 Verifier  →  Attestation (signed, persisted)
@@ -406,7 +406,7 @@ Verifier  →  Attestation (signed, persisted)
 ### Consumer requirements
 
 - **Idempotent by construction.** Key every message with an `event_id`; a `ProcessedEvent` table
-  makes reprocessing a no-op. A duplicate delivery must never cause a duplicate payment — prove it
+  makes reprocessing a no-op. A duplicate delivery must never cause a duplicate payment - prove it
   with a test that delivers the same message 20 times.
 - **Re-authorize before acting.** The consumer trusts the database, never the message payload.
 - Manual offset commit *after* successful processing. At-least-once delivery, exactly-once effect.
@@ -434,11 +434,11 @@ class ObjectStore(Protocol):
     def delete(self, key: str) -> None: ...
 ```
 
-- `LocalStore` — a Docker volume, default for development. `S3Store` — boto3, works against MinIO
+- `LocalStore` - a Docker volume, default for development. `S3Store` - boto3, works against MinIO
   or real S3, selected by env var. MinIO may be included in compose as an optional profile.
 - On upload: stream to storage, compute `sha256` while streaming, store the hash on `Artifact`,
   and never trust a client-supplied hash.
-- Enforce max size, an allowlist of MIME types, and a real content sniff — not just the extension.
+- Enforce max size, an allowlist of MIME types, and a real content sniff - not just the extension.
 - Access is tenant-scoped (I12) and served through short-lived presigned URLs; never a public path.
 - Artifact bytes are never logged and never sent on-chain (I7, I11).
 
@@ -448,15 +448,15 @@ class ObjectStore(Protocol):
 
 Fully in scope. Implement completely.
 
-**Registration** — email + password + name. Email unique (case-insensitive, store normalized).
+**Registration** - email + password + name. Email unique (case-insensitive, store normalized).
 Password hashed with **Argon2id** (`argon2-cffi`), sensible memory/time cost, never MD5/SHA/bcrypt-
 by-hand. Password policy: minimum length 10, reject a known-weak list, no composition theatre.
 
-**Login / session** — short-lived access token (JWT, 15 min) + rotating refresh token stored
+**Login / session** - short-lived access token (JWT, 15 min) + rotating refresh token stored
 server-side and revocable. Refresh rotation with reuse detection: a replayed refresh token
 invalidates the whole family and logs a security event. `httpOnly`, `Secure`, `SameSite=Lax`
 cookies for the browser; `Authorization: Bearer` accepted for API clients. Logout revokes.
-Generic error message on bad credentials — never reveal whether the email exists.
+Generic error message on bad credentials - never reveal whether the email exists.
 
 **Email verification**
 
@@ -478,7 +478,7 @@ a successful reset or a password change, never logged, never returned in an API 
 forgot-password endpoint responds identically whether or not the account exists. A successful reset
 revokes every existing session.
 
-**Email delivery** — `EmailProvider` interface with `DevelopmentEmailProvider` writing to
+**Email delivery** - `EmailProvider` interface with `DevelopmentEmailProvider` writing to
 **Mailpit** in compose. The project must run end to end locally with no external email service and
 no API key.
 
@@ -499,12 +499,12 @@ Roles: `OWNER` > `ADMIN` > `MEMBER` > `VIEWER`.
 
 | Capability | OWNER | ADMIN | MEMBER | VIEWER |
 |---|---|---|---|---|
-| Create/fund deals | ✓ | ✓ | ✓ | — |
-| Submit evidence | ✓ | ✓ | ✓ | — |
-| Approve human review / disputes | ✓ | ✓ | — | — |
-| Invite / remove members, change roles | ✓ | ✓ | — | — |
+| Create/fund deals | ✓ | ✓ | ✓ | - |
+| Submit evidence | ✓ | ✓ | ✓ | - |
+| Approve human review / disputes | ✓ | ✓ | - | - |
+| Invite / remove members, change roles | ✓ | ✓ | - | - |
 | View deals, ledger, provenance | ✓ | ✓ | ✓ | ✓ |
-| Delete organization, transfer ownership | ✓ | — | — | — |
+| Delete organization, transfer ownership | ✓ | - | - | - |
 
 Implement: create org, list members, invite by email (token flow), accept invite, change role,
 remove member, switch active organization, and last-owner protection (an org can never be left
@@ -514,7 +514,7 @@ without an OWNER).
 repository/query layer so a developer cannot forget it: every query for a tenant-owned entity takes
 an `org_id` and filters on it. Authorization is a FastAPI dependency chain
 (`current_user → current_membership → require_role(...) → require_resource_in_org(...)`), and it
-returns `404` — not `403` — for another tenant's resource, so ids do not leak by probing.
+returns `404` - not `403` - for another tenant's resource, so ids do not leak by probing.
 
 **A dedicated security test suite (§31) must attempt cross-tenant access on every single
 tenant-owned route and assert failure.** Enumerate routes programmatically so a new route added
@@ -547,7 +547,7 @@ The demo convenience switch:
 that is registered **only when `DEMO_MODE=true`**, accepts `buyer|seller`, and issues a genuine
 session for the corresponding seeded user through the normal login path. Every downstream request
 is then an ordinary authenticated, tenant-scoped request. In the code, the guard is a hard
-`if not settings.DEMO_MODE: raise NotFound` at router registration time — not a runtime flag check
+`if not settings.DEMO_MODE: raise NotFound` at router registration time - not a runtime flag check
 inside a handler. Document it in `docs/SECURITY.md` as a deliberate demo affordance.
 
 ---
@@ -665,7 +665,7 @@ evidence quality, compute confidence, produce and sign an attestation.
 It **must not**: call Razorpay, create payouts, release or refund money, or import `settlement/`,
 `rails/` or `payments/`.
 
-### Pipeline — this order, no shortcuts
+### Pipeline - this order, no shortcuts
 
 ```
 1. DETERMINISTIC PRE-CHECKS  (zero LLM calls)
@@ -687,7 +687,7 @@ It **must not**: call Razorpay, create payouts, release or refund money, or impo
    per clause → {clause_id, verdict: PASS|FAIL|UNVERIFIABLE,
                  evidence_refs[], clause_confidence, note}
 
-4. CONFIDENCE  (pure Python — NOT the model's self-reported number)
+4. CONFIDENCE  (pure Python - NOT the model's self-reported number)
    verifiable_fraction = deterministic_clauses_passed / total_required_clauses
    llm_component       = mean(clause_confidence for non-UNVERIFIABLE clauses)
    penalty             = 0.5 * (unverifiable_required_clauses / total_required_clauses)
@@ -703,7 +703,7 @@ It **must not**: call Razorpay, create payouts, release or refund money, or impo
 ```
 
 **`UNVERIFIABLE` is a first-class verdict** and must be used honestly. "Four photographs cannot
-establish that exactly 500 finished units exist" is `UNVERIFIABLE` — not `PASS`, not `FAIL`. This
+establish that exactly 500 finished units exist" is `UNVERIFIABLE` - not `PASS`, not `FAIL`. This
 single design decision is what makes the demo's refusal beat real instead of staged.
 
 Put this sentence in the README: *"We do not trust the model's self-reported confidence.
@@ -727,7 +727,7 @@ Wrap the SDK in `agents/_llm.py` behind an `LLMProvider` interface so a determin
 - Use `claude-opus-5` for clause evaluation and the arbiter. `claude-sonnet-5` is an acceptable
   cost lever for per-artifact extraction. Record whichever ran in `Attestation.model_id`.
   Pricing for Report E: Opus 5 `$5 / $25` per MTok in/out; Sonnet 5 `$2 / $10`.
-- `thinking={"type": "adaptive"}`. **Never** pass `budget_tokens` — it is rejected with a 400 on
+- `thinking={"type": "adaptive"}`. **Never** pass `budget_tokens` - it is rejected with a 400 on
   Opus 5 and Sonnet 5.
 - Structured output via the SDK parse helper:
 
@@ -759,7 +759,7 @@ resp = anthropic.Anthropic().messages.parse(
 evaluation = resp.parsed_output
 ```
 
-- **Prompt caching:** the system prompt and clause rubric are byte-stable — put them first behind a
+- **Prompt caching:** the system prompt and clause rubric are byte-stable - put them first behind a
   `cache_control` breakpoint, keep the volatile case payload after it. Assert
   `resp.usage.cache_read_input_tokens > 0` in a test and report the observed hit rate.
 - `prompt_hash` = sha256 of the exact rendered system + user content. This is what makes a decision
@@ -780,7 +780,7 @@ evaluation = resp.parsed_output
   hash that depends on dict ordering is worthless. Unit-test that reordering input keys yields an
   identical hash.
 - Sign the canonical attestation with the verifier key using **EIP-712** typed data. The contract
-  recovers the signer on-chain, so the record proves *who* attested — not merely that something was
+  recovers the signer on-chain, so the record proves *who* attested - not merely that something was
   attested. That is what lifts this above "we wrote a hash to a chain".
 - **Evidence Merkle tree:** each leaf = `sha256(artifact_bytes) || sha256(canonical_json(extracted_fields))`,
   leaves sorted, standard binary tree, documented duplicate-node rule. Store `merkle_root` on the
@@ -815,7 +815,7 @@ class ArbiterRecommendation(BaseModel):
 **Human review is a first-class workflow, not an admin afterthought.** The reviewer sees: the
 evidence, extracted fields, the verifier decision, the confidence *and its component breakdown*,
 every clause verdict, the arbiter recommendation with citations, and the open questions. Actions:
-`APPROVE`, `REJECT`, `OVERRIDE` — each requiring a mandatory free-text reason. For disputes, the
+`APPROVE`, `REJECT`, `OVERRIDE` - each requiring a mandatory free-text reason. For disputes, the
 release/refund split is **editable**. Persist the AI recommendation, the human decision, the delta,
 the reason, the user and the timestamp; emit a ledger event for each.
 
@@ -834,10 +834,10 @@ class PaymentRail(Protocol):
     def get_status(self, rail_ref: RailRef) -> RailStatus: ...
 ```
 
-- `RazorpayRail` — **test mode only.** Orders API for funding, Payments for capture, Route
+- `RazorpayRail` - **test mode only.** Orders API for funding, Payments for capture, Route
   transfers to a linked account for seller release where the test dashboard exposes it, Refunds API
   for the refund leg.
-- `SimulatedRail` — deterministic stub that writes the same `Payout` rows, ledger events and Kafka
+- `SimulatedRail` - deterministic stub that writes the same `Payout` rows, ledger events and Kafka
   events, so the whole flow is identical.
 - Webhooks: verify the signature before anything else, persist raw, publish to
   `aegis.payment-webhooks`, process idempotently, tolerate replays and out-of-order delivery.
@@ -921,7 +921,7 @@ contract AegisEscrow {
 decision/confidence round-trip, EIP-712 signature recovery, dispute-window enforcement, and
 settlement-amount bounds.
 
-**Operator-key limitation — document it plainly, do not pretend otherwise:**
+**Operator-key limitation - document it plainly, do not pretend otherwise:**
 
 ```
 Current:  backend holds the operator key (permissioned anchoring)
@@ -933,7 +933,7 @@ Goal:     fully non-custodial
 Naming your own trust assumption reads as competence. Hiding it reads as the opposite.
 
 Commit the deployed address and a Basescan link. Chain writes go through the outbox/worker path too
-— a chain RPC failure must never roll back a settled payout, and must be visibly retried.
+- a chain RPC failure must never roll back a settled payout, and must be visibly retried.
 
 ### Local audit ledger
 
@@ -953,7 +953,7 @@ LightGBM binary classifier in `backend/app/risk/`.
 - **Target:** `deal_went_bad` = dispute raised OR refund required.
 - **Features:** `deals_completed`, `log(gmv_paise)`, `dispute_rate`, `on_time_rate`,
   `deal_paise / largest_deal_paise` (stretch ratio), `milestone_count`, `avg_milestone_paise`,
-  `category`, `counterparty_age_days`, and `condition_objectivity_score` — the fraction of clauses
+  `category`, `counterparty_age_days`, and `condition_objectivity_score` - the fraction of clauses
   that are deterministically checkable. That last one is genuinely predictive and a pleasure to
   explain.
 - **Pricing tiers:**
@@ -963,7 +963,7 @@ LightGBM binary classifier in `backend/app/risk/`.
 | < 0.10 | 0.8% | 0 days | 30% |
 | 0.10–0.25 | 1.5% | 3 days | 50% |
 | 0.25–0.50 | 2.5% | 7 days | 100% |
-| > 0.50 | decline | — | — |
+| > 0.50 | decline | - | - |
 
 - Never show a bare score. Always the top-3 contributing factors in plain language.
 - Report D: AUC, PR-AUC, calibration curve, a logistic-regression baseline to beat, and the
@@ -975,21 +975,21 @@ LightGBM binary classifier in `backend/app/risk/`.
 
 All in scope. None becomes a separate service.
 
-**Notifications** — `Notification` + `NotificationPreference`. Kafka `aegis.notifications` is the
+**Notifications** - `Notification` + `NotificationPreference`. Kafka `aegis.notifications` is the
 async source. Events: deal created, terms signed, deal funded, evidence submitted, verification
 completed, **human review required**, dispute raised, dispute resolved, payout completed, payout
 failed, invitation received. In-app bell with unread count; email for the subset the user opted
 into.
 
-**Email** — `EmailProvider` interface, `DevelopmentEmailProvider` → Mailpit. Templates: email
+**Email** - `EmailProvider` interface, `DevelopmentEmailProvider` → Mailpit. Templates: email
 verification, password reset, organization invitation, human review required, dispute raised,
 settlement completed. No external service required to run locally.
 
-**Chat** — deal-scoped only. `DealMessage` with sender, timestamp, unread tracking. Buyer and
+**Chat** - deal-scoped only. `DealMessage` with sender, timestamp, unread tracking. Buyer and
 seller exchange messages inside the deal cockpit. Off-chain, tenant-scoped, never fed to the
 verifier as evidence. This is not a messaging platform; resist every urge to make it one.
 
-**Realtime** — SSE (preferred; simpler than WebSockets here) for deal state changes, verification
+**Realtime** - SSE (preferred; simpler than WebSockets here) for deal state changes, verification
 progress, human-review queue updates, settlement status, chat and notifications. One endpoint per
 concern, authenticated, tenant-scoped, with reconnect and last-event-id. Do not over-engineer.
 
@@ -1009,31 +1009,31 @@ Non-negotiables:
   in a component.
 - **i18n: English + Hindi.** Centralized dictionaries in `frontend/i18n/{en,hi}.json`, a `t()`
   helper, no hardcoded user-facing strings in components. Currency and dates via `Intl` with the
-  `en-IN` numbering system, so ₹4,20,000 renders with Indian grouping — not ₹420,000.
+  `en-IN` numbering system, so ₹4,20,000 renders with Indian grouping - not ₹420,000.
 - **Fintech-grade, not generic-AI-dashboard.** Money state, verification state, uncertainty, human
   approval and provenance must be visually unmistakable. Uncertainty is a first-class visual state
-  with its own treatment — not a yellow badge bolted onto a success component.
+  with its own treatment - not a yellow badge bolted onto a success component.
 - Never expose ORM shapes; consume the typed API. Loading, empty, and error states for every view.
 - Accessibility: real focus states, labelled inputs, keyboard-operable dialogs, AA contrast in both
   themes, `aria-live` on the verification result.
 
 ### The six primary screens
 
-1. **Deal cockpit** — state machine visual, parties, total, milestone cards, and a **money bar**
+1. **Deal cockpit** - state machine visual, parties, total, milestone cards, and a **money bar**
    that always visibly satisfies `held + released + refunded = funded` (I4 on screen). Includes the
    agent console panel and the chat panel.
-2. **Evidence submission** — drag-and-drop, artifact type selection, upload progress, computed
+2. **Evidence submission** - drag-and-drop, artifact type selection, upload progress, computed
    sha256, extracted-fields preview, bundle assembly and submit.
-3. **Verification result** — *the most important screen.* Clause-by-clause table with
+3. **Verification result** - *the most important screen.* Clause-by-clause table with
    PASS / FAIL / **UNVERIFIABLE** treatments, the confidence value *with its component breakdown*,
    the decision, the reasoning, and evidence citations that link to the artifact.
-4. **Human review queue** — escalated milestones, precisely what the agent could not verify, the
+4. **Human review queue** - escalated milestones, precisely what the agent could not verify, the
    evidence, the recommendation, approve / reject / override with a mandatory reason, and an
    editable split for disputes.
-5. **Provenance explorer** — for any rupee: model, model version, prompt hash, evidence Merkle
+5. **Provenance explorer** - for any rupee: model, model version, prompt hash, evidence Merkle
    root, clause verdicts, confidence computation, verifier signer, human approver, on-chain tx
    link, and the **tamper-check widget**.
-6. **Reputation view** — counterparty passport: attested history, completed deals, GMV, disputes,
+6. **Reputation view** - counterparty passport: attested history, completed deals, GMV, disputes,
    on-time rate, risk score, top-3 factors in plain language, resulting escrow pricing tier.
 
 Plus the supporting flows: auth (register, verify, login, forgot/reset), organization management
@@ -1059,7 +1059,7 @@ Chain            → attestation anchored 0x…
 # 25. UI MOTION AND THE REFERENCE VIDEO PROTOCOL
 
 The UI must be animated, not merely responsive. **A reference video of the desired animated site
-will be supplied.** Handle it like this — the whole point is that the video can arrive *after* the
+will be supplied.** Handle it like this - the whole point is that the video can arrive *after* the
 build starts without forcing a rewrite.
 
 ### 25.1 Two-file visual indirection (build this from the start)
@@ -1074,7 +1074,7 @@ frontend/design/motion.ts    # durations, easings, distances, stagger, named var
 Components consume tokens and named motion variants only. **No component contains a hex colour, a
 raw duration, or an inline easing curve.**
 
-### 25.2 The design pack — ALREADY WRITTEN. READ IT.
+### 25.2 The design pack - ALREADY WRITTEN. READ IT.
 
 The reference recordings have been supplied and frame-analysed. The resulting design and motion
 system lives in **`aegis/ui/`** and it is binding. Read all of it before writing any frontend code:
@@ -1082,8 +1082,8 @@ system lives in **`aegis/ui/`** and it is binding. Read all of it before writing
 | File | Contents |
 |---|---|
 | `ui/README.md` | Index, the design thesis, non-negotiables, what each reference contributed |
-| `ui/00-DESIGN-SYSTEM.md` | Palette with semantics, typography, scale, grid, micro-labels — **contains `tokens.css` verbatim** |
-| `ui/01-MOTION-SYSTEM.md` | Durations, easings, every named variant, reduced-motion, perf rules — **contains `motion.ts` verbatim** |
+| `ui/00-DESIGN-SYSTEM.md` | Palette with semantics, typography, scale, grid, micro-labels - **contains `tokens.css` verbatim** |
+| `ui/01-MOTION-SYSTEM.md` | Durations, easings, every named variant, reduced-motion, perf rules - **contains `motion.ts` verbatim** |
 | `ui/02-PRELOADER-AND-HERO.md` | Boot sequence and hero, shot by shot with timings |
 | `ui/03-DROP-IN-REVEALS.md` | The element entrance system and where each variant applies |
 | `ui/04-CURSOR-AND-HOVER.md` | Custom cursor, item hover panel wipe, list magic-bar |
@@ -1098,7 +1098,7 @@ duration scale, or an easing curve. Copy `ui/` into `docs/UI_MOTION.md` (or syml
 
 **Three rules from that pack that override anything you might otherwise assume:**
 
-1. **Hue is data.** Exactly three hues exist in the product — mint = `PASS`/released, amber =
+1. **Hue is data.** Exactly three hues exist in the product - mint = `PASS`/released, amber =
    `UNVERIFIABLE`/escalated/held, red = `FAIL`/adverse. The brand is monochrome. Never introduce a
    coloured brand accent; it would collide with the state system and make the interface lie.
 2. **`UNVERIFIABLE` never fully settles.** Its label resolves and then perpetually disturbs one
@@ -1120,13 +1120,13 @@ duration scale, or an easing curve. Copy `ui/` into `docs/UI_MOTION.md` (or syml
 - Scroll reveals use `IntersectionObserver` (Framer's `whileInView` with `once: true`), never
   scroll-event listeners.
 - Skeletons for loading, not spinners, on the deal cockpit and verification screens.
-- **Motion that carries meaning** — spend the animation budget on the moments the demo depends on:
+- **Motion that carries meaning** - spend the animation budget on the moments the demo depends on:
   the money bar re-splitting when a milestone releases; the clause table resolving row by row; the
   `UNVERIFIABLE` state arriving with distinctly *different* motion from `PASS`; the attestation
   seal forming as it is signed and anchored; the tamper check failing. Those five moments are worth
   more than a decorative hero.
 - Every animated element must have a correct static end state. If JS fails, the page is still fully
-  readable — verify by disabling animations entirely.
+  readable - verify by disabling animations entirely.
 
 ---
 
@@ -1178,7 +1178,7 @@ behind a compose profile.
 Requirements:
 
 - **Healthchecks on every dependency**, and `depends_on: { condition: service_healthy }` on the
-  app services. Without this, one-command startup is a coin flip — Kafka and Postgres both need a
+  app services. Without this, one-command startup is a coin flip - Kafka and Postgres both need a
   real readiness probe, not a sleep.
 - The migration entrypoint holds a Postgres advisory lock so api/worker/relay cannot race.
 - `docker-compose.dev.yml` adds bind mounts and hot reload (`uvicorn --reload`, `next dev`).
@@ -1186,7 +1186,7 @@ Requirements:
   `data/generated`, `.git`.
 - Named volumes for postgres, kafka, redis and evidence storage so data survives a restart.
 - Contract tooling (Foundry) may run in its own container or on the host; the app must start
-  without it, degrading to "chain anchoring unavailable" with a visible banner — never a crash.
+  without it, degrading to "chain anchoring unavailable" with a visible banner - never a crash.
 
 ---
 
@@ -1229,9 +1229,9 @@ make clean
 
 `backend/scripts/generate_dataset.py`, seeded (`--seed 42`), fully deterministic.
 
-- `deals.parquet` — 2,000 deals with outcomes for the risk model, with train/valid/**test** splits
+- `deals.parquet` - 2,000 deals with outcomes for the risk model, with train/valid/**test** splits
   written to disk. The test split is touched exactly once, at the end.
-- `evidence/` — **150 labelled bundles** across 5 milestone types, with *real* generated PDFs and
+- `evidence/` - **150 labelled bundles** across 5 milestone types, with *real* generated PDFs and
   images so the extraction path is genuinely exercised. Each labelled
   `should_release | should_reject | should_escalate`.
   At least 40 must be adversarial: correct document with the **wrong date**; correct document with
@@ -1239,8 +1239,8 @@ make clean
   inconsistent totals; a **low-quality scan** (correct label: escalate); photos that **cannot
   establish quantity** (correct label: escalate); and a **perfectly valid but unusual** bundle to
   catch over-rejection.
-- `counterparties.json` — 30 entities with histories, including 4 thin-file cases.
-- `data/fixtures/demo_deal.json` — the exact demo deal, so `make demo` is reproducible.
+- `counterparties.json` - 30 entities with histories, including 4 thin-file cases.
+- `data/fixtures/demo_deal.json` - the exact demo deal, so `make demo` is reproducible.
 
 `docs/DATA.md` declares every base rate, each marked **[sourced]** (with the source) or
 **[assumed]** (with why the assumption is conservative). One honest page here protects every number
@@ -1253,26 +1253,26 @@ in the README.
 `make eval` regenerates **every metric in the README** from scratch. No hardcoded numbers anywhere
 in the docs. Output to `evals/out/` as JSON plus a markdown table for direct paste.
 
-**Suite A — verifier accuracy** (150 labelled bundles)
-3×3 confusion matrix over {release, reject, escalate}; **HARD GATE: false releases == 0** — a false
+**Suite A - verifier accuracy** (150 labelled bundles)
+3×3 confusion matrix over {release, reject, escalate}; **HARD GATE: false releases == 0** - a false
 release is unrecoverable money, so if this is not zero the build is failing, printed loudly;
 escalation rate with a stated target band (12–25%) and a sentence on why too high is useless and
 too low is unsafe; confidence calibration by bucket plus Brier score; per-adversarial-category
 breakdown that shows your **worst** category honestly.
 
-**Suite B — settlement integrity** (property + concurrency)
+**Suite B - settlement integrity** (property + concurrency)
 I4 holds after any random legal event sequence; 20 concurrent releases ⇒ exactly one payout;
 no release without a qualifying attestation; full ledger replay reconstructs identical balances;
 every illegal transition raises; duplicate Kafka delivery ⇒ single effect; outbox crash-injection
 ⇒ exactly-once publish.
 
-**Suite C — provenance integrity**
+**Suite C - provenance integrity**
 Flip one artifact byte ⇒ Merkle proof fails; mutate a ledger event ⇒ verify reports the exact
 broken index; every on-chain anchor matches the local attestation hash on read-back.
 
-**Report D — risk model** AUC, PR-AUC, calibration, logistic baseline comparison, tier distribution.
+**Report D - risk model** AUC, PR-AUC, calibration, logistic baseline comparison, tier distribution.
 
-**Report E — cost and latency** tokens and ₹/$ per verification, prompt-cache hit rate, p50/p95
+**Report E - cost and latency** tokens and ₹/$ per verification, prompt-cache hit rate, p50/p95
 latency per pipeline stage, and the share of decisions resolved by deterministic pre-checks alone
 at zero AI cost.
 
@@ -1294,7 +1294,7 @@ Real tests. Minimum coverage by kind:
 `tenant isolation` (see below) · `seed idempotency` (seed×3, and resume-after-failure) ·
 `logging` (masked fields never appear in output).
 
-**Security suite — required, and it must be route-exhaustive:**
+**Security suite - required, and it must be route-exhaustive:**
 
 Cross-tenant access on every tenant-owned route (enumerate the router programmatically so a new
 unscoped route fails automatically) · broken object-level authorization via id guessing ·
@@ -1314,7 +1314,7 @@ CI (`.github/workflows/ci.yml`): lint → typecheck → unit → integration (co
 Structured logs (§6) with correlation throughout. `/health` reports liveness plus per-dependency
 readiness (postgres, redis, kafka, object store, chain RPC) with degraded-mode flags. Expose
 lightweight counters for verifications by decision, settlements by outcome, DLQ depth, and AI spend
-— a small internal `/metrics`-style JSON endpoint is sufficient; do not install Prometheus and
+- a small internal `/metrics`-style JSON endpoint is sufficient; do not install Prometheus and
 Grafana for a hackathon.
 
 Every financial operation traceable end to end:
@@ -1332,12 +1332,12 @@ limitations.
 docs/ARCHITECTURE.md   diagrams, module boundaries, the money/AI separation (I2),
                        Kafka + outbox flow, trust model, operator-key limitation
 docs/DATA.md           base rates, [sourced] vs [assumed]
-docs/DECISIONS.md      ADR log — every ambiguity you resolved and why
+docs/DECISIONS.md      ADR log - every ambiguity you resolved and why
 docs/DEMO.md           the timestamped video beat sheet (§35)
 docs/SECURITY.md       auth model, tenancy, threat notes, the DEMO_MODE affordance
 docs/API.md            exported OpenAPI reference
 docs/OPERATIONS.md     runbook: migrations, seeding, DLQ drain, key rotation, redeploy
-docs/UI_MOTION.md      §25 — copy of ui/ (design + motion pack, already written)
+docs/UI_MOTION.md      §25 - copy of ui/ (design + motion pack, already written)
 docs/LIMITATIONS.md    what is simulated, what is permissioned, what would change next
 ```
 
@@ -1345,7 +1345,7 @@ docs/LIMITATIONS.md    what is simulated, what is permissioned, what would chang
 
 # 34. ENVIRONMENT AND QUICKSTART
 
-`.env.example` — complete, with placeholders that are obviously placeholders. Never commit a fake
+`.env.example` - complete, with placeholders that are obviously placeholders. Never commit a fake
 secret that looks real enough to be mistaken for one.
 
 ```
@@ -1443,7 +1443,7 @@ Build continuously through this dependency order. Do not stop between steps to a
 
 ---
 
-# 36. THE DEMO — FIXTURE AND VIDEO BEAT SHEET
+# 36. THE DEMO - FIXTURE AND VIDEO BEAT SHEET
 
 **Fixture.** Meridian Label (Bangalore, buyer, represented by a procurement agent) buys 500 custom
 kurtas from Tirupur Exports. Total **₹4,20,000**. Neither has traded with the other before.
@@ -1454,7 +1454,7 @@ kurtas from Tirupur Exports. Total **₹4,20,000**. Neither has traded with the 
 | 2 | Production complete | ₹1,68,000 (40%) | photo set evidencing 500 finished units matching the approved spec |
 | 3 | Delivered & accepted | ₹1,26,000 (30%) | signed delivery challan + condition report, 7-day dispute window |
 
-**Required outcomes** — produced by the real pipeline, never by a special case:
+**Required outcomes** - produced by the real pipeline, never by a special case:
 
 - **Milestone 1** → all clauses PASS, confidence ≈ 0.94, **RELEASE**, ₹1,26,000 settles.
 - **Milestone 2** → clause "500 finished units" returns **UNVERIFIABLE** (four photographs cannot
@@ -1470,9 +1470,9 @@ kurtas from Tirupur Exports. Total **₹4,20,000**. Neither has traded with the 
 - **0:20–0:50** the deadlock, and the new question an AI buyer creates.
 - **0:50–1:30** deal formation, funding ₹4,20,000, `openDeal` on Basescan, money bar at held.
 - **1:30–2:15** milestone 1 clean release: pre-checks, all PASS, 0.94, ₹1,26,000 out, anchored.
-- **2:15–3:05** **milestone 2 — the refusal. The most important 50 seconds of the submission.**
+- **2:15–3:05** **milestone 2 - the refusal. The most important 50 seconds of the submission.**
   UNVERIFIABLE, 0.51, ESCALATE, no movement, human queue. Say it aloud: *"it did not guess, and it
-  did not block — it said what it could not verify and asked for a human."*
+  did not block - it said what it could not verify and asked for a human."*
 - **3:05–3:50** dispute → arbiter recommendation with citations → editable split → human approves →
   ₹1,15,920 / ₹10,080 → money bar closes.
 - **3:50–4:30** provenance explorer, then the tamper demo failing on camera. *"When agents move
@@ -1559,7 +1559,7 @@ Do not hide failures. If an external integration is unavailable:
 4. document the limitation in `docs/LIMITATIONS.md`.
 
 **Never fabricate** a blockchain transaction, a Razorpay payout, an evaluation number, an AI
-confidence value, or a test result. If a test fails, fix the cause — never weaken the test.
+confidence value, or a test result. If a test fails, fix the cause - never weaken the test.
 
 ---
 
@@ -1581,7 +1581,7 @@ The goal is **one deeply implemented agentic escrow system**, not a feature coun
    reads it. Here is the CI check that fails if those two modules ever import each other."*
 2. *"It did not guess and it did not block. It said what it could not verify, and asked for a
    human."*
-3. *"Zero false releases across 150 labelled evidence bundles — and you can reproduce that with
+3. *"Zero false releases across 150 labelled evidence bundles - and you can reproduce that with
    `make eval`."*
 
 Every line of this specification exists to make those three sentences demonstrably true.

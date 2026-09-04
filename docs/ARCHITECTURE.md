@@ -24,7 +24,7 @@ app/agents/            app/settlement/
 CI plants a real violation, requires the lint to fail, restores the file and requires it to pass.
 
 `app.settlement.guards` is deliberately on the *allowed* list. It is a pure function of a frozen
-input with no I/O, so the verifier can call it to predict a decision — but predicting is all it can
+input with no I/O, so the verifier can call it to predict a decision - but predicting is all it can
 do, because only `engine.py` can write a `SettlementAuthorization`, and `engine.py` is unreachable
 from `agents/`.
 
@@ -51,7 +51,7 @@ overrule it. See ADR-004 in [`DECISIONS.md`](DECISIONS.md).
 
 ---
 
-## 2. Request path — a verification
+## 2. Request path - a verification
 
 ```
 POST /api/v1/milestones/{id}/start-verify
@@ -87,7 +87,7 @@ the authorization; it never re-runs the verifier and cannot reach it.
 
 ---
 
-## 3. Money path — the transactional outbox (I13)
+## 3. Money path - the transactional outbox (I13)
 
 A financial state change and its Kafka event are never two independent writes.
 
@@ -122,7 +122,7 @@ first act is an atomic conditional `UPDATE … SET claimed_at = now() WHERE cons
 returns `CLAIM_HELD_BY_ANOTHER_WORKER` **without acking**, so the message is retried rather than
 silently dropped, and it makes **no rail call**.
 
-That claim — not the Redis lock — is the serialisation point. The Redis lock is a fast path that
+That claim - not the Redis lock - is the serialisation point. The Redis lock is a fast path that
 saves a database round trip in the common case; if Redis is down, correctness is unaffected. This
 was a real bug: with the lock as the only guard and `required=False`, 20 concurrent releases produced
 1 payout and **18 rail calls**. Suite B check 7 now measures 20 attempts → **1 payout, 1 rail call**.
@@ -140,7 +140,7 @@ key makes the retry safe at the provider.
 | Kafka is down | Outbox backlog grows, visible on `/ledger`. Money already authorised stays authorised. Nothing is dual-written. |
 | Redis is down | Rate limiting and the lock fast path degrade; the DB claim still serialises. |
 | Postgres is down | The API refuses readiness and the app halts at boot rather than pretending. |
-| An SSE client stays connected | Nothing is pinned. The handler closes its database session **before** returning the stream, because a dependency-provided session is otherwise released only when the response finishes — which for SSE is hours. Left unfixed, every open tab sat `idle in transaction`, holding a pooled connection and an ACCESS SHARE lock on `ledger_events`. |
+| An SSE client stays connected | Nothing is pinned. The handler closes its database session **before** returning the stream, because a dependency-provided session is otherwise released only when the response finishes - which for SSE is hours. Left unfixed, every open tab sat `idle in transaction`, holding a pooled connection and an ACCESS SHARE lock on `ledger_events`. |
 | Rail call fails | Payout row `FAILED` with the reason; the authorization stays unconsumed and can be retried. `_release_transition()` returns `None` when the milestone is already `RELEASE_APPROVED`, so the retry is legal. |
 | Milestone is disputed mid-flight | The worker refuses with `MILESTONE_DISPUTED` and no money moves. Seen in the demo transcript. |
 
@@ -158,7 +158,7 @@ root   = evidence_merkle_root, stored on the attestation and signed
 ```
 
 Both halves matter: `sha256(bytes)` binds the file, and `sha256(canonical_json(fields))` binds the
-*extraction* — so changing what the system believes a document says invalidates the proof even if
+*extraction* - so changing what the system believes a document says invalidates the proof even if
 the bytes are untouched. Suite C check 2 proves both: `tampered_bytes_rejected=True`,
 `tampered_fields_rejected=True`.
 
@@ -183,7 +183,7 @@ address from the canonical hash**, not by comparing a stored string. Suite C che
 
 Append-only and hash-chained: `payload_hash = sha256(canonical_json(payload))`, and each row carries
 the previous row's hash. Append-only is enforced by the `aegis_append_only()` Postgres trigger, not
-by application discipline — Suite B check 5 issues an `UPDATE` and a `DELETE` and both raise **in the
+by application discipline - Suite B check 5 issues an `UPDATE` and a `DELETE` and both raise **in the
 database**. `seq` uses `Identity(always=False, start=1)`; `autoincrement=True` on a non-primary-key
 column is a no-op in SQLAlchemy, which was a real `NULL` violation before it was fixed.
 
@@ -199,8 +199,8 @@ broken ledger, so both are checked.
 Isolation is a repository concern, not per-endpoint discipline. `TenantRepo` takes the acting
 organization at construction and every accessor is scoped through one of two ownership kinds:
 
-* `_OWN_ORG` — the row carries an `org_id` directly (`Entity`, `Notification`).
-* `_VIA_DEAL` — the row is reachable only through a deal the org is party to, via an explicit join
+* `_OWN_ORG` - the row carries an `org_id` directly (`Entity`, `Notification`).
+* `_VIA_DEAL` - the row is reachable only through a deal the org is party to, via an explicit join
   chain (`Milestone`, `EvidenceBundle`, `Artifact`, `Attestation`, `Dispute`, `LedgerEvent`,
   `DealMessage`, `Payout`, `SettlementAuthorization`, `ChainAnchor`).
 
@@ -211,7 +211,7 @@ the deal, not authorship of the row.
 A cross-tenant read returns **404, not 403**. A 403 confirms the resource exists.
 
 There is no `?as=` parameter anywhere. The demo affordance (`POST /dev/assume`) performs a real
-login for a seeded user through `auth_service.login` — password verification included — and is not
+login for a seeded user through `auth_service.login` - password verification included - and is not
 registered at all when `DEMO_MODE=false`.
 
 ---
@@ -245,7 +245,7 @@ calls `get_logger(name)`.
 The wrapper exists because the shipped API differs from the documented one: `setup_logify()` takes no
 arguments, `mask` is a boolean rather than a field list, and masking only touches the message string.
 So the wrapper adds `AegisMaskFilter`, which masks structured `extra` fields as well, with
-scheme-prefixed patterns ordered **before** key/value patterns — otherwise
+scheme-prefixed patterns ordered **before** key/value patterns - otherwise
 `authorization: Bearer <token>` leaked the token. See ADR-002.
 
 The Kafka audit sink is a bridge, not a direct call: logifyx's `emit()` blocks synchronously and
@@ -254,7 +254,7 @@ uses a bounded queue and one daemon thread with a persistent loop, with an `atex
 minutes became eight seconds.
 
 Because logifyx installs itself as the global logger class, the wrapper restores `logging.Logger`
-immediately after each Aegis logger is constructed — otherwise SQLAlchemy's INFO stream floods the
+immediately after each Aegis logger is constructed - otherwise SQLAlchemy's INFO stream floods the
 output.
 
 ---
@@ -264,8 +264,8 @@ output.
 App Router, one client-side API module, no ORM shape ever reaching a component.
 
 ```
-design/tokens.css     verbatim from the design pack — the only file that defines a colour
-design/motion.ts      verbatim — the only file that defines a duration or an easing
+design/tokens.css     verbatim from the design pack - the only file that defines a colour
+design/motion.ts      verbatim - the only file that defines a duration or an easing
 design/brand.ts       two literals for <meta name="theme-color">, which is read before any CSS
 app/globals.css       component styles; every value is a token reference
 scripts/check-tokens.mjs   fails the build on a hex colour, a raw duration or an inline easing,

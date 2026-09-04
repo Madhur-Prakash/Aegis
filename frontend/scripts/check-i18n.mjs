@@ -59,4 +59,4 @@ if (problems.length) {
   for (const problem of problems) console.error(`  ${problem}`);
   process.exit(1);
 }
-console.log(`check-i18n: ok — ${used.size} keys used, ${flatten(en).length} defined`);
+console.log(`check-i18n: ok - ${used.size} keys used, ${flatten(en).length} defined`);

@@ -13,7 +13,7 @@
  */
 
 export const BRAND_THEME_COLOR = {
-  /** `:root { --bg }` — dark is the default. */
+  /** `:root { --bg }` - dark is the default. */
   dark: "#08080A",
   /** `:root[data-theme="light"] { --bg }`. */
   light: "#F2EFE9",

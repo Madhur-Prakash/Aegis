@@ -30,7 +30,7 @@ const toLine = (entry: LedgerEntry): Line => ({
   id: `seq-${entry.seq}`,
   time: timeOnly(entry.created_at),
   actor: entry.actor,
-  event: entry.reason ? `${entry.event_type} — ${entry.reason}` : entry.event_type,
+  event: entry.reason ? `${entry.event_type} - ${entry.reason}` : entry.event_type,
 });
 
 export function AgentConsole({
@@ -64,7 +64,7 @@ export function AgentConsole({
           id: `${event}-${lines.length}`,
           time: timeOnly(new Date()),
           actor: "VERIFIER",
-          event: detail ? `${event} — ${detail}` : event,
+          event: detail ? `${event} - ${detail}` : event,
           live: true,
         },
       ]);

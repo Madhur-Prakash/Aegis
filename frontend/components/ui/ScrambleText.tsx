@@ -18,7 +18,7 @@ import { useReducedMotion } from "@/hooks/useReducedMotion";
 
 /** Deliberately the target alphabet plus a few technical marks: it should look
  *  like a machine resolving, not like static. */
-const POOL = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789/\\|<>—+·";
+const POOL = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789/\\|<>-+·";
 
 const rand = (source: string) => source[Math.floor(Math.random() * source.length)] ?? "·";
 

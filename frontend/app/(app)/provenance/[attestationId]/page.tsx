@@ -162,7 +162,7 @@ export default function ProvenancePage() {
                   <div className="meta-grid">
                     <Meta label={t("settlement.rail")} value={payout.rail} />
                     <Meta label={t("settlement.status")} value={payout.status} />
-                    <Meta label={t("settlement.railRef")} value={payout.rail_ref ?? "—"} />
+                    <Meta label={t("settlement.railRef")} value={payout.rail_ref ?? "-"} />
                     <Meta
                       label={t("settlement.railRefHash")}
                       value={<Hash value={payout.rail_ref_hash} />}
@@ -213,12 +213,12 @@ export default function ProvenancePage() {
               label={t("chain.contract")}
               value={<Hash value={record.chain.contract_address} head={6} tail={6} />}
             />
-            <Meta label={t("chain.dealId")} value={record.deal.chain_deal_id ?? "—"} />
+            <Meta label={t("chain.dealId")} value={record.deal.chain_deal_id ?? "-"} />
           </div>
           {!record.chain.available ? (
             <p className="table-note">
               {t("chain.unavailable")}
-              {record.chain.reason ? ` — ${record.chain.reason}` : ""}
+              {record.chain.reason ? ` - ${record.chain.reason}` : ""}
             </p>
           ) : null}
           <div className="stack" style={{ gap: "var(--sp-3)", paddingTop: "var(--sp-4)" }}>

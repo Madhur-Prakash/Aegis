@@ -114,7 +114,7 @@ export default function EvidencePage() {
                     ? Object.entries(condition.tolerance)
                         .map(([key, value]) => `${key}=${String(value)}`)
                         .join(" · ")
-                    : "—"
+                    : "-"
                 }
               />
             </div>

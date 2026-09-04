@@ -125,7 +125,7 @@ export default function LedgerIndexPage() {
                 value={
                   Object.entries(metrics.data.verifications_by_decision ?? {})
                     .map(([decision, count]) => `${decision} ${count}`)
-                    .join(" · ") || "—"
+                    .join(" · ") || "-"
                 }
               />
               <Meta
@@ -133,7 +133,7 @@ export default function LedgerIndexPage() {
                 value={
                   Object.entries(metrics.data.settlements_by_status ?? {})
                     .map(([status, count]) => `${status} ${count}`)
-                    .join(" · ") || "—"
+                    .join(" · ") || "-"
                 }
               />
               <Meta
@@ -143,7 +143,7 @@ export default function LedgerIndexPage() {
                     ? `${spend.calls} ${t("ledger.calls")} · $${(
                         spend.cost_micro_usd / 1_000_000
                       ).toFixed(4)}`
-                    : "—"
+                    : "-"
                 }
               />
             </div>

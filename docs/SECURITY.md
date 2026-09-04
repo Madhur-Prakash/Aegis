@@ -1,6 +1,6 @@
 # Security
 
-What is defended, how, and — in the last section — what is deliberately not built. A threat model
+What is defended, how, and - in the last section - what is deliberately not built. A threat model
 that lists only strengths is marketing.
 
 ---
@@ -10,7 +10,7 @@ that lists only strengths is marketing.
 | adversary | wants | primary defence |
 |---|---|---|
 | **A dishonest seller** | Release on evidence that does not support the clause | Deterministic pre-checks before any model call; `FAIL` on a required clause is an immediate `REJECT`; the evidence-integrity pre-check catches internally inconsistent documents (fabricated totals) that read as valid in isolation |
-| **A dishonest buyer** | Withhold payment on satisfied conditions | Verification is symmetric — the buyer cannot veto a `RELEASE`; a dispute must be raised with a claim, is recorded in the ledger, and settlement of it needs a human decision with a written reason |
+| **A dishonest buyer** | Withhold payment on satisfied conditions | Verification is symmetric - the buyer cannot veto a `RELEASE`; a dispute must be raised with a claim, is recorded in the ledger, and settlement of it needs a human decision with a written reason |
 | **A curious tenant** | Read another organization's deals, evidence or ledger | Tenant scoping in the repository layer, not per endpoint (I12); cross-tenant reads return **404** so existence is not confirmed |
 | **A prompt injector** | Get an LLM to authorise a transfer | The agent packages **cannot import** the settlement engine, the rails or the payments layer; CI proves the lint fails on a planted violation (I2). The worst a successful injection achieves is a wrong clause verdict, which then flows through the guard and the thresholds like any other verdict |
 | **A tamperer** | Alter evidence or a decision after the fact | Merkle root over `sha256(bytes) ‖ sha256(canonical_json(fields))`; EIP-712 signature over the canonical hash; append-only hash-chained ledger enforced by a Postgres **trigger** |
@@ -27,16 +27,16 @@ that lists only strengths is marketing.
   own origin via a Next rewrite, so the cookie is first-party and there is no CORS-credentials
   arrangement to get wrong.
 * **Refresh rotation.** Using a refresh token issues a new one and invalidates the old. Replaying a
-  rotated token revokes the **entire family** — and the revocation is committed inside the service
+  rotated token revokes the **entire family** - and the revocation is committed inside the service
   *before* the error is raised, because a router that raises before committing would leave the family
   alive. That was a real bug.
 * **Revocation is immediate, not eventual.** The access token is a stateless JWT, so revoking the
   refresh token alone left a bearer token working for the rest of its 15-minute TTL. `current_user`
   now checks the token's `sid` (its refresh-family id) against the refresh rows and refuses a token
-  whose family has been revoked — one indexed lookup per request. Verified against the running
+  whose family has been revoked - one indexed lookup per request. Verified against the running
   stack: after a logout, a reset, or refresh-reuse detection, the previously valid access token
   returns 401 on the next call.
-* Password reset revokes every other session, and the UI says so — truthfully.
+* Password reset revokes every other session, and the UI says so - truthfully.
 * Login failures are indistinguishable for "no such account" and "wrong password", and
   `POST /auth/forgot-password` returns the same confirmation either way. Neither is an enumeration
   oracle.
@@ -48,7 +48,7 @@ that lists only strengths is marketing.
 
 Redis token buckets. Defaults: `auth` **10 per 60s**, `verify` **12 per 60s**, `upload` **40 per
 60s**. Login is limited **per client IP and per account**, so one account cannot be brute-forced from
-many addresses. Exceeding a limit returns `RATE_LIMITED` (429) — the limiter stays enabled in the
+many addresses. Exceeding a limit returns `RATE_LIMITED` (429) - the limiter stays enabled in the
 test suite and has its own test proving the 429, rather than being switched off to make CI quiet.
 
 ---
@@ -56,10 +56,10 @@ test suite and has its own test proving the 429, rather than being switched off 
 ## 3. Authorization and tenant isolation (I12)
 
 Isolation is architectural. `TenantRepo` is constructed with the acting organization and there is
-**no unscoped accessor** — adding a tenant-scoped table means declaring its ownership kind:
+**no unscoped accessor** - adding a tenant-scoped table means declaring its ownership kind:
 
-* `_OWN_ORG` — the row carries `org_id` (`Entity`, `Notification`)
-* `_VIA_DEAL` — the row is reachable only through a deal the org is party to, with an explicit join
+* `_OWN_ORG` - the row carries `org_id` (`Entity`, `Notification`)
+* `_VIA_DEAL` - the row is reachable only through a deal the org is party to, with an explicit join
   chain (`Milestone`, `EvidenceBundle`, `Artifact`, `Attestation`, `Dispute`, `LedgerEvent`,
   `DealMessage`, `Payout`, `SettlementAuthorization`, `ChainAnchor`)
 
@@ -72,7 +72,7 @@ Roles are `OWNER`, `ADMIN`, `MEMBER`, `VIEWER`. An organization can never lose i
 
 **No impersonation.** There is no `?as=` parameter, no impersonation header and no runtime flag check
 inside a handler. `POST /dev/assume` performs a real login for a seeded user through the ordinary
-path — password verification included — and the router is **not registered at all** when
+path - password verification included - and the router is **not registered at all** when
 `DEMO_MODE=false`, so the route does not exist rather than being guarded.
 
 ---
@@ -112,12 +112,12 @@ Artifact bytes and extracted evidence content are never logged and never sent on
 
 * Uploads are **content-sniffed** and a declared/sniffed mismatch is rejected
   (`ARTIFACT_REJECTED`). PDF, PNG and JPEG only; 20 MB cap.
-* Stored under a random key in the object store — local by default, S3/MinIO optional. **There is no
+* Stored under a random key in the object store - local by default, S3/MinIO optional. **There is no
   public path to an artifact.** Access is a short-lived HMAC-signed presigned URL minted on the
   tenant-scoped bundle view, with the expiry inside the signed payload.
 * The frontend computes `sha256` in the browser before upload and displays it next to the hash the
   server computed. `crypto.subtle` requires a secure context, so when it is unavailable the UI says
-  *"local hash unavailable on this origin"* rather than back-filling the server's answer — a local
+  *"local hash unavailable on this origin"* rather than back-filling the server's answer - a local
   hash that is really the remote hash would prove nothing while looking like proof.
 
 ---

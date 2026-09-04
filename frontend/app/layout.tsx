@@ -8,7 +8,7 @@ import { LOCALE_KEY } from "@/lib/i18n";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Aegis — every rupee has a provable reason",
+  title: "Aegis - every rupee has a provable reason",
   description:
     "Programmable escrow for agentic commerce. An AI verifies the evidence, a deterministic engine moves the money, and every decision is signed and anchored.",
   applicationName: "Aegis",

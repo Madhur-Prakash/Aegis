@@ -133,7 +133,7 @@ export default function DealLedgerPage() {
                       <td>{payout.direction}</td>
                       <td className="num">{inrExact(payout.amount_paise)}</td>
                       <td>{payout.rail}</td>
-                      <td className="num">{payout.rail_ref ?? "—"}</td>
+                      <td className="num">{payout.rail_ref ?? "-"}</td>
                       <td>
                         <div className="stack" style={{ gap: "var(--sp-1)" }}>
                           <span

@@ -189,7 +189,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
       {me && !me.email_verified ? (
         <div className="degraded" role="status">
           <span aria-hidden>▲</span>
-          {t("auth.verifyTitle")} — <Link href="/verify-email" className="link">{t("auth.resend")}</Link>
+          {t("auth.verifyTitle")} - <Link href="/verify-email" className="link">{t("auth.resend")}</Link>
         </div>
       ) : null}
 
@@ -230,7 +230,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
         <hr className="rule" />
         <div className="row-between" style={{ paddingTop: "var(--sp-3)" }}>
           <span className="nano">
-            {t("brand")} — {t("tagline")}
+            {t("brand")} - {t("tagline")}
           </span>
           {health ? (
             <span className="nano">

@@ -1,7 +1,7 @@
 # API
 
 Base path `/api/v1`. The generated OpenAPI document is
-[`openapi.json`](openapi.json) — **75 paths, 82 operations**, regenerated with `make docs` — and is
+[`openapi.json`](openapi.json) - **75 paths, 82 operations**, regenerated with `make docs` - and is
 browsable at <http://localhost:8000/docs> when the stack is up.
 
 This document covers the parts a generated schema cannot: the envelope, the auth model, the error
@@ -28,7 +28,7 @@ Access and refresh tokens are issued as **httpOnly, SameSite cookies** on `POST 
 which is what a non-browser client uses as `Authorization: Bearer <token>`.
 
 * Passwords are hashed with **Argon2id**.
-* Refresh tokens rotate on use, and **reuse of a rotated token revokes the whole family** — the
+* Refresh tokens rotate on use, and **reuse of a rotated token revokes the whole family** - the
   revocation is committed inside the service before the error is raised, so a request that raises
   still leaves the family revoked.
 * `POST /auth/reset-password` revokes every other session.
@@ -65,7 +65,7 @@ Every expected failure returns this shape. A bare 500 is a bug, not an outcome.
 }
 ```
 
-`code` is stable and machine-readable — clients branch on it, never on the prose. `message` is
+`code` is stable and machine-readable - clients branch on it, never on the prose. `message` is
 human-readable and may change. `details` is a typed object per code. `request_id` also appears on the
 `x-request-id` response header and in every log line for that request, so a support conversation can
 start with an id.
@@ -131,7 +131,7 @@ move.
 
 ### Endpoints worth knowing about
 
-**`GET /health/ready`** — the readiness contract. Every dependency reports `ready`, `required` and,
+**`GET /health/ready`** - the readiness contract. Every dependency reports `ready`, `required` and,
 where relevant, `mode`:
 
 Actual response from the running stack:
@@ -153,13 +153,13 @@ Actual response from the running stack:
 ```
 
 `ok` stays `true` while only optional dependencies are degraded. Redis is optional because its two
-jobs — rate limiting and the settlement lock fast path — both degrade safely: the atomic DB claim
+jobs - rate limiting and the settlement lock fast path - both degrade safely: the atomic DB claim
 still serialises settlement without it.
 
 The boot screen and the degraded banner read this, so the interface cannot claim a dependency is fine
 when the backend says it is not.
 
-**`GET /payments/rail`** — the honesty table, labelled **per operation**:
+**`GET /payments/rail`** - the honesty table, labelled **per operation**:
 
 ```json
 {
@@ -178,20 +178,20 @@ when the backend says it is not.
 Per operation, not per rail: webhook verification can be real while a payout is simulated, and
 collapsing that into one label would be a lie in one direction or the other.
 
-**`GET /health/eval-summary`** — the headline numbers from the last `make eval`, verbatim, so no
+**`GET /health/eval-summary`** - the headline numbers from the last `make eval`, verbatim, so no
 figure on a marketing surface can be typed by hand. Returns
 `{"available": false, "reason": "…"}` when `evals/out/summary.json` is absent, and the landing page
 then shows nothing rather than a number nobody measured.
 
-**`POST /evidence/verify`** — public Merkle verification. Takes `(leaf, proof, root)` and recomputes
+**`POST /evidence/verify`** - public Merkle verification. Takes `(leaf, proof, root)` and recomputes
 the root from the path alone. This is the endpoint that makes a proof a proof: a second party can
 check it without trusting the server that produced it.
 
-**`POST /provenance/tamper-check`** — takes `content_b64` and `expected_sha256` and returns the
+**`POST /provenance/tamper-check`** - takes `content_b64` and `expected_sha256` and returns the
 digest it **actually computed** for those bytes. It changes nothing. This backs the "Tamper one byte"
 control in the UI.
 
-**`GET /evidence/download/{token}`** — a short-lived HMAC-signed presigned link, minted on the bundle
+**`GET /evidence/download/{token}`** - a short-lived HMAC-signed presigned link, minted on the bundle
 view. There is no public path to an artifact and the frontend never constructs one.
 
 ## 5. Realtime
@@ -211,7 +211,7 @@ exponential backoff so a backend restart cannot become a reconnect storm.
 
 Redis token buckets, keyed per organization or per client IP depending on the surface:
 `auth:register` and `auth:login` (per IP **and** per account, so one account cannot be brute-forced
-from many addresses), `verify`, `upload`, `chat`. Exceeding one returns `RATE_LIMITED` (429) — proven
+from many addresses), `verify`, `upload`, `chat`. Exceeding one returns `RATE_LIMITED` (429) - proven
 by its own test rather than disabled in the suite.
 
 ## 7. Idempotency
@@ -219,4 +219,4 @@ by its own test rather than disabled in the suite.
 Money endpoints are idempotent on `(milestone_id, direction, attempt_no)`, enforced by a unique
 index. The rail receives an explicit idempotency key derived from that triple, so a retry after a
 network failure is a no-op at the provider. 20 concurrent release attempts produce **exactly one
-payout and exactly one rail call** — measured, in Suite B check 7.
+payout and exactly one rail call** - measured, in Suite B check 7.

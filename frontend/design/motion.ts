@@ -1,5 +1,5 @@
 /* ─────────────────────────────────────────────────────────────────────────
-   AEGIS MOTION SYSTEM — the only file that defines a duration or an easing.
+   AEGIS MOTION SYSTEM - the only file that defines a duration or an easing.
    Components import named variants; never inline a curve or a number.
    ───────────────────────────────────────────────────────────────────────── */
 import type { Transition, Variants } from "motion/react";
@@ -39,7 +39,7 @@ export const SPRING: Record<string, Transition> = {
 const t = (duration: number, ease: readonly number[] = E.enter): Transition =>
   ({ duration, ease: ease as [number, number, number, number] });
 
-/* ── dropIn — THE DEFAULT ENTRANCE (reference A × B) ────────── */
+/* ── dropIn - THE DEFAULT ENTRANCE (reference A × B) ────────── */
 export const dropIn: Variants = {
   hidden: { opacity: 0, y: 28, rotateX: -10, filter: "blur(8px)" },
   show: (i: number = 0) => ({
@@ -48,7 +48,7 @@ export const dropIn: Variants = {
   }),
 };
 
-/* ── flipWord — per-word flap reveal (reference A) ──────────── */
+/* ── flipWord - per-word flap reveal (reference A) ──────────── */
 export const flipWord: Variants = {
   hidden: { rotateX: -92, opacity: 0, y: 6 },
   show: (i: number = 0) => ({
@@ -57,7 +57,7 @@ export const flipWord: Variants = {
   }),
 };
 
-/* ── blurUp — per-line soft rise (reference B) ──────────────── */
+/* ── blurUp - per-line soft rise (reference B) ──────────────── */
 export const blurUp: Variants = {
   hidden: { opacity: 0, y: 18, filter: "blur(14px)" },
   show: (i: number = 0) => ({
@@ -66,7 +66,7 @@ export const blurUp: Variants = {
   }),
 };
 
-/* ── slatUp — column mask reveal (reference B) ──────────────── */
+/* ── slatUp - column mask reveal (reference B) ──────────────── */
 export const SLAT_COLUMNS = 24;
 export const slatUp: Variants = {
   hidden: { scaleY: 0 },
@@ -85,19 +85,19 @@ export const chipPop: Variants = {
   }),
 };
 
-/* ── panelWipe — hover backdrop (reference D) ───────────────── */
+/* ── panelWipe - hover backdrop (reference D) ───────────────── */
 export const panelWipe: Variants = {
   rest:  { scaleX: 0, transition: t(D.base, E.exit) },
   hover: { scaleX: 1, transition: t(D.slow, E.expo) },
 };
 
-/* ── mediaSwap — alternate thumbnail (reference D) ──────────── */
+/* ── mediaSwap - alternate thumbnail (reference D) ──────────── */
 export const mediaSwap: Variants = {
   rest:  { opacity: 0, scale: 1.04, transition: t(D.base, E.exit) },
   hover: { opacity: 1, scale: 1.0,  transition: t(D.base, E.enter) },
 };
 
-/* ── sonarPulse — flanking arcs (reference C) ───────────────── */
+/* ── sonarPulse - flanking arcs (reference C) ───────────────── */
 export const sonarPulse = (i: number): Variants => ({
   idle: {
     opacity: [0.10, 0.34, 0.10],
@@ -106,7 +106,7 @@ export const sonarPulse = (i: number): Variants => ({
   },
 });
 
-/* ── stepWipe — boot → app (reference A) ────────────────────── */
+/* ── stepWipe - boot → app (reference A) ────────────────────── */
 export const STEP_WIPE_STEPS = 6;
 export const stepWipeClip = (p: number, steps = STEP_WIPE_STEPS) => {
   // Descending staircase sweeping bottom-left → top-right.
@@ -120,7 +120,7 @@ export const stepWipeClip = (p: number, steps = STEP_WIPE_STEPS) => {
   return `polygon(${pts.join(",")})`;
 };
 
-/* ── Scroll-reveal defaults — ALWAYS once:true (spec §25.3) ─── */
+/* ── Scroll-reveal defaults - ALWAYS once:true (spec §25.3) ─── */
 export const inView = { once: true, amount: 0.25 } as const;
 
 /* ── Reduced motion ─────────────────────────────────────────── */

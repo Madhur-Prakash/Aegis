@@ -206,7 +206,7 @@ def main() -> int:
         )
         return 1
 
-    print(f"secret-scan: ok — {scanned} files scanned, no credential-shaped literal")
+    print(f"secret-scan: ok - {scanned} files scanned, no credential-shaped literal")
     return 0
 
 

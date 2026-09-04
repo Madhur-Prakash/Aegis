@@ -1,7 +1,7 @@
 [project]
 name = "aegis"
 version = "1.0.0"
-description = "Aegis — programmable escrow for agentic commerce"
+description = "Aegis - programmable escrow for agentic commerce"
 requires-python = "==3.12.*"
 dependencies = [
     "fastapi>=0.115",

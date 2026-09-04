@@ -19,7 +19,7 @@ The product is monochrome. There are exactly **three** semantic hues and each on
 Each has a `-tint` (12–14% mix) for a fill and an `-edge` (40–45%) for a border, so a chip never
 needs a second colour.
 
-**Red is reserved.** It appears when something is *wrong* — a `FAIL` verdict, a digest mismatch, a
+**Red is reserved.** It appears when something is *wrong* - a `FAIL` verdict, a digest mismatch, a
 broken ledger index, an unbalanced money bar. It is never used for emphasis, for a destructive button
 that is merely irreversible, or for decoration. This is why the custom cursor is
 `mix-blend-mode: difference` and carries no hue at all, departing from the reference it is based on.
@@ -53,7 +53,7 @@ page titles; body at `--fs-body`; `micro` and `nano` in mono, uppercase, tracked
   grouping differs, and a judge from Bangalore reading `₹420,000` instead of `₹4,20,000` would be
   right to notice.
 * **Confidence is always three decimals.** `0.510` and `0.51` must not look different.
-* **Hashes truncate in the middle**, never at the end — both ends of a hash carry signal — and the
+* **Hashes truncate in the middle**, never at the end - both ends of a hash carry signal - and the
   full value is in `title` and copyable.
 
 ### Devanagari
@@ -82,7 +82,7 @@ Easings: `E.enter` `[0.16, 1, 0.30, 1]`, `E.exit` `[0.55, 0, 0.85, 0.25]`, `E.ex
 
 ### Entrances
 
-One default — `dropIn` (opacity, `y: 28`, `rotateX: -10`, an 8px blur clearing) — and five
+One default - `dropIn` (opacity, `y: 28`, `rotateX: -10`, an 8px blur clearing) - and five
 specialists, each used only where the pack specifies: `flipWord` for the hero, `blurUp` for lede
 lines, `slatUp` for the column mask, `chipPop` for chips, `panelWipe`/`mediaSwap` for the hover card.
 
@@ -105,7 +105,7 @@ scroll back is a page that feels unfinished.
 
 ### The one thing that never comes to rest
 
-`UNVERIFIABLE` resolves and then **keeps disturbing one random character, forever** — one slot, a
+`UNVERIFIABLE` resolves and then **keeps disturbing one random character, forever** - one slot, a
 random glyph for 90ms, restored, repeating after 1800 + random(1400)ms.
 
 A `PASS` chip's label locks. An amber badge that sits still says "warning". A label that cannot hold
@@ -118,14 +118,14 @@ timers.
 
 ## 5. Reduced motion
 
-One hook, `useReducedMotion`, honoured globally — plus a CSS backstop for anything that slips past
+One hook, `useReducedMotion`, honoured globally - plus a CSS backstop for anything that slips past
 it. It reads the OS preference **and** an in-product override, so Settings → Animation → Off reaches
 every component through the same channel as the system setting and the two cannot diverge.
 
 Under reduced motion:
 
 * every entrance collapses to a 0.18s crossfade (`pick()` swaps the variant set);
-* the `UNVERIFIABLE` jitter **stops entirely** and the chip keeps a static `?` and a dashed border —
+* the `UNVERIFIABLE` jitter **stops entirely** and the chip keeps a static `?` and a dashed border -
   same message, no motion;
 * `CountUp` renders the final value immediately;
 * the money bar stops animating `layout` but still shows the correct proportions;
@@ -142,7 +142,7 @@ Three states, designed rather than defaulted.
 * **Empty** is a `micro` label, one line of explanation, and the single action that resolves it.
   Never an illustration.
 * **Error** appears **instantly**, with no entrance animation, and carries the typed `code` from the
-  API envelope above the message — mirroring I9 in the interface.
+  API envelope above the message - mirroring I9 in the interface.
 
 ## 7. Enforcement
 
@@ -153,7 +153,7 @@ npm run check:i18n       # no key a component asks for that a dictionary lacks
 
 `check-tokens` scans `app/`, `components/`, `hooks/` and `lib/`, skipping only `design/`, and
 additionally asserts the CSS duration scale in `globals.css` **equals** `D` in `motion.ts`
-numerically — otherwise a CSS transition and its Framer counterpart could drift and the same
+numerically - otherwise a CSS transition and its Framer counterpart could drift and the same
 interaction would take two different times depending on which layer animated it.
 
 A line may be exempted with a `tokens-allow:` comment stating the reason, which puts the exemption in

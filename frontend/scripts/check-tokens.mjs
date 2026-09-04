@@ -156,4 +156,4 @@ if (violations.length > 0) {
   process.exit(1);
 }
 
-console.log(`check-tokens: ok — ${files.length} files, no literal colour, duration or easing`);
+console.log(`check-tokens: ok - ${files.length} files, no literal colour, duration or easing`);

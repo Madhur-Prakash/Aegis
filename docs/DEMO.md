@@ -12,7 +12,7 @@ Then open <http://localhost:3000> and sign in with **Continue as the demo buyer*
 > The login screen's demo buttons post to `POST /api/v1/dev/assume`, which runs the seeded user's
 > real email and password through the ordinary login path and sets the same httpOnly cookies. There
 > is no `?as=` parameter anywhere, and with `DEMO_MODE=false` the route is not registered at all.
-> Say this out loud when you demo it — it is the difference between a demo affordance and a back
+> Say this out loud when you demo it - it is the difference between a demo affordance and a back
 > door.
 
 ---
@@ -31,7 +31,7 @@ three milestones.
 
 ---
 
-## Minute 0 — the landing page
+## Minute 0 - the landing page
 
 <http://localhost:3000>
 
@@ -48,7 +48,7 @@ than buried.
 
 ---
 
-## Minute 1 — the cockpit
+## Minute 1 - the cockpit
 
 `/deals/{id}`
 
@@ -56,23 +56,23 @@ than buried.
 segments animate `flexGrow` through Framer's `layout`, so the total width never changes and
 `released + held + refunded = funded` is *visibly* conserved. The tick is computed client-side from
 the actual numbers; if it were ever false the line would turn red and show a cross. That should be
-impossible — showing it anyway is how I4 is meant seriously.
+impossible - showing it anyway is how I4 is meant seriously.
 
 Also on this screen:
 
 * **risk 0.0083 → `TIER_1`**, 0.8% fee, 0 hold days, 30% buyer prefund. Click through to
   `/deals/{id}/risk` for the three factors that moved it, in plain language:
-  * `-1.183` — on-time rate 91% across their deals
-  * `-0.963` — 92% of clauses are machine-checkable
-  * `-0.647` — counterparty of 1.5 years standing
-* the **agent console** — a monospace log fed by the deal's hash-chained ledger and the live SSE
+  * `-1.183` - on-time rate 91% across their deals
+  * `-0.963` - 92% of clauses are machine-checkable
+  * `-0.647` - counterparty of 1.5 years standing
+* the **agent console** - a monospace log fed by the deal's hash-chained ledger and the live SSE
   stream. Every line corresponds to a row in `ledger_events`; nothing is invented client-side.
-* **messages**, with the footnote *"Deal-scoped. Never used as evidence."* — which is literally
+* **messages**, with the footnote *"Deal-scoped. Never used as evidence."* - which is literally
   true: chat is not hashed into any bundle.
 
 ---
 
-## Minute 2 — milestone 01 releases automatically
+## Minute 2 - milestone 01 releases automatically
 
 `/deals/{id}/milestones/{id}/evidence` → **Run verification**
 
@@ -85,7 +85,7 @@ Open the verification screen and stay on it. Three things to point at:
 2. **The confidence breakdown**, which is not optional. Four bars and the arithmetic:
    `0.45·verifiable_fraction + 0.45·llm_component + 0.10·extraction_quality − 0.50·(unverifiable_required/total_required)`,
    then calibrated. **We do not use the model's self-reported confidence for anything.**
-3. **The seal** — a circle draws clockwise, the sigil scales with an overshoot, and the truncated
+3. **The seal** - a circle draws clockwise, the sigil scales with an overshoot, and the truncated
    transaction hash types in beneath. One-shot; it never replays on re-render.
 
 Then the money: **INR 126,000.00** released, rail reference `sim_rel_a21033dd5d2554eb6936`, labelled
@@ -94,7 +94,7 @@ and the sum line still ticks.
 
 ---
 
-## Minute 3 — milestone 02 escalates, and this is the whole product
+## Minute 3 - milestone 02 escalates, and this is the whole product
 
 The seller submits **four photographs** as evidence of 500 completed units.
 
@@ -105,11 +105,11 @@ Measured: **ESCALATE @ confidence 0.197.** Clause `c2` came back `UNVERIFIABLE` 
 
 **No money moved.** Held stays at INR 294,000.00.
 
-Look at the `UNVERIFIABLE` chip. It resolves — and then keeps disturbing one random character,
+Look at the `UNVERIFIABLE` chip. It resolves - and then keeps disturbing one random character,
 forever. It is the only element in the product that never comes to rest, and it is the only one that
 should not: a static amber badge says "warning", while a label that cannot hold still says *the
 machine is still not sure*, which is the literal truth of the state. Under reduced motion the jitter
-stops entirely and the chip keeps a static `?` and a dashed border — same message, no motion.
+stops entirely and the chip keeps a static `?` and a dashed border - same message, no motion.
 
 Then `/review`. The queue leads with **WHAT THE AGENT COULD NOT VERIFY**, because that is the only
 reason the row is there, and a reviewer who has to hunt for it starts rubber-stamping. The reason
@@ -120,17 +120,17 @@ to INR 126,000.00.
 
 ---
 
-## Minute 4 — milestone 03, a dispute, and an advisory arbiter
+## Minute 4 - milestone 03, a dispute, and an advisory arbiter
 
 Milestone 03 verified **RELEASE @ 0.865**. Before the payout ran, the buyer **raised a dispute** over
 60 units.
 
 Measured, from the transcript: the settlement worker **refused the pending authorization** with
-reason `MILESTONE_DISPUTED`. Held stays at INR 126,000.00. This is I8 doing its job at runtime — the
+reason `MILESTONE_DISPUTED`. Held stays at INR 126,000.00. This is I8 doing its job at runtime - the
 authorization existed and was still not consumed.
 
-The arbiter then produced an **advisory** recommendation: `PARTIAL` @ 0.74 — release INR 115,920.00,
-refund INR 10,080.00 — with its arithmetic shown:
+The arbiter then produced an **advisory** recommendation: `PARTIAL` @ 0.74 - release INR 115,920.00,
+refund INR 10,080.00 - with its arithmetic shown:
 
 > The tolerance clause allows a 20% deduction per affected unit at a unit price of 84,000 paise:
 > 60 × 84,000 × 20% = 1,008,000 paise.
@@ -144,12 +144,12 @@ The open questions get as much room as the reasoning. An arbiter that admits wha
 more useful than one that does not, and hiding that list behind a disclosure would be a way of
 quietly not showing it.
 
-The human approved the split. Measured `override_delta 0` — the reviewer agreed, and the delta is
+The human approved the split. Measured `override_delta 0` - the reviewer agreed, and the delta is
 recorded either way.
 
 ---
 
-## Minute 5 — it reconciles, and you can break it
+## Minute 5 - it reconciles, and you can break it
 
 Final money, measured:
 
@@ -163,19 +163,19 @@ balanced  true
 
 Deal state `COMPLETED`. Ledger: **37 events**, `verify ok`, head `f4d78c5004c9e768…`.
 
-### The provenance screen — `/provenance/{attestationId}`
+### The provenance screen - `/provenance/{attestationId}`
 
 "For this rupee." One page that answers the audit question end to end: which model decided, on which
 prompt hash, over which evidence Merkle root, signed by which key, approved by which human, paid on
 which rail reference, anchored in which transaction.
 
 `signature verifies` is rendered from `signature_verified`, which the backend computes by
-**recovering the signer address from the canonical hash** — not by comparing a stored string.
+**recovering the signer address from the canonical hash** - not by comparing a stored string.
 
 **Now break it.** Press **Tamper one byte**. The browser downloads the artifact through its
 short-lived presigned link, flips exactly one bit of one byte in its own copy, hashes it locally, and
 asks `POST /api/v1/provenance/tamper-check` to hash the same bytes. The digests differ, the row
-shakes once, and the mismatched digest is underlined in red — the only place in the product where red
+shakes once, and the mismatched digest is underlined in red - the only place in the product where red
 means "stop". **Nothing on the server changed.**
 
 Press **Check the bytes** to see it pass again.

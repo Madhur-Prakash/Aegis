@@ -91,19 +91,19 @@ export function PricingPanel({ pricing }: { pricing: Passport["pricing"] }) {
           <Meta label={t("reputation.tier")} value={pricing.tier} />
           <Meta
             label={t("reputation.escrowFee")}
-            value={pricing.escrow_fee_pct === null ? "—" : pct(pricing.escrow_fee_pct, 2)}
+            value={pricing.escrow_fee_pct === null ? "-" : pct(pricing.escrow_fee_pct, 2)}
           />
           <Meta
             label={t("reputation.hold")}
             value={
               pricing.hold_days_after_final_release === null
-                ? "—"
+                ? "-"
                 : `${pricing.hold_days_after_final_release} ${t("reputation.days")}`
             }
           />
           <Meta
             label={t("reputation.prefund")}
-            value={pricing.buyer_prefund_pct === null ? "—" : pct(pricing.buyer_prefund_pct, 0)}
+            value={pricing.buyer_prefund_pct === null ? "-" : pct(pricing.buyer_prefund_pct, 0)}
           />
         </div>
       ) : (
@@ -140,7 +140,7 @@ export function PassportPanel({ passport }: { passport: Passport }) {
           />
           <Meta
             label={t("reputation.onTime")}
-            value={passport.on_time_rate === null ? "—" : pct(passport.on_time_rate, 0)}
+            value={passport.on_time_rate === null ? "-" : pct(passport.on_time_rate, 0)}
           />
           <Meta label={t("reputation.largestDeal")} value={inr(passport.largest_deal_paise)} />
         </div>
