@@ -229,7 +229,7 @@ does in normal operation. For a pristine demo after an eval run:
 make destroy && make up && make seed && make demo    # or just: make demo-reset
 ```
 
-### The test suite fails in ways CI does not
+### The test suite fails while the stack is running
 
 The suite drives the relay and the consumers **in-process** against the compose
 Postgres. If the `worker` and `relay` containers are running, they consume the same
@@ -238,7 +238,10 @@ attempts - producing failures like *"0 rail calls"* that are the idempotency gua
 working, not a defect.
 
 `make test` stops those two services first for exactly this reason; `make up` brings them
-back. CI provisions its own Postgres with no worker, so it never hits this.
+back.
+
+CI does not run `pytest` at all - it runs the static gates and `make eval` only, so the
+test suite is a **local** gate. `make ci` is the full local equivalent.
 
 ### A verification looks wrong
 

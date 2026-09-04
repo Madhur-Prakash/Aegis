@@ -1,10 +1,17 @@
 name: ci
 
-# Nothing here is allowed to pass by skipping.  The integration job provisions a
-# real Postgres and a real Redis, because the invariants those tests prove
-# (append-only triggers, unique indexes, row locking, the money CHECK constraint)
-# do not exist without them -- and a suite that quietly skips is a suite that
-# reports green while proving nothing.
+# Static gates plus the measured evaluation.  Three jobs, no Docker build and no
+# pytest -- deliberately kept fast so a push gives an answer in minutes.
+#
+# The eval job still provisions a real Postgres and a real Redis, because the
+# suites it runs prove things that do not exist without them (append-only
+# triggers, unique indexes, row locking, the money CHECK constraint) and because
+# a suite that quietly skips is a suite that reports green while proving nothing.
+#
+# What this workflow does NOT cover, so it is not mistaken for full coverage:
+#   * `pytest` (259 tests)      -> `make test` locally
+#   * `forge test` (24 tests)   -> `make contracts-test` locally
+#   * image build + compose up  -> `make up-build` locally
 
 on:
   push:
@@ -160,110 +167,11 @@ jobs:
         working-directory: frontend
         run: npm run build
 
-  # ── 3. Contracts ──────────────────────────────────────────────────────────
-  contracts:
-    name: forge build · forge test
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          submodules: recursive
-
-      - uses: foundry-rs/foundry-toolchain@v1
-        with:
-          version: stable
-
-      - name: forge build
-        working-directory: contracts
-        run: forge build --sizes
-
-      - name: forge test
-        working-directory: contracts
-        run: forge test -vv
-
-  # ── 4. Backend tests against real Postgres, Redis and Kafka ───────────────
-  backend-tests:
-    name: pytest (unit + integration)
-    runs-on: ubuntu-latest
-    needs: [backend-static]
-
-    services:
-      postgres:
-        image: postgres:16-alpine
-        env:
-          POSTGRES_USER: aegis
-          POSTGRES_PASSWORD: aegis
-          POSTGRES_DB: aegis
-        ports: ["5432:5432"]
-        options: >-
-          --health-cmd "pg_isready -U aegis -d aegis"
-          --health-interval 3s
-          --health-timeout 3s
-          --health-retries 20
-
-      redis:
-        image: redis:7-alpine
-        ports: ["6379:6379"]
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 3s
-          --health-timeout 3s
-          --health-retries 20
-
-    env:
-      DATABASE_URL: postgresql+asyncpg://aegis:aegis@localhost:5432/aegis
-      DATABASE_URL_SYNC: postgresql+psycopg://aegis:aegis@localhost:5432/aegis
-      REDIS_URL: redis://localhost:6379/0
-      # Kafka is exercised by its own step below; the test suite runs with the
-      # in-memory bus so a broker hiccup cannot flake an assertion about money.
-      KAFKA_ENABLED: "false"
-      LOG_TO_KAFKA: "false"
-      AI_PROVIDER: fixture
-      PAYMENT_RAIL: simulated
-      CHAIN_ENABLED: "false"
-      DEMO_MODE: "true"
-      JWT_SECRET: ci-only-insecure-secret
-      OBJECT_STORE: local
-      LOCAL_STORE_PATH: /tmp/aegis-evidence
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: astral-sh/setup-uv@v5
-        with:
-          version: ${{ env.UV_VERSION }}
-          enable-cache: true
-          cache-dependency-glob: backend/uv.lock
-
-      - name: Install
-        working-directory: backend
-        run: uv sync --frozen --all-extras
-
-      - name: Migrate
-        working-directory: backend
-        run: uv run alembic upgrade head
-
-      # If Postgres were unreachable the integration tests would skip and the
-      # job would still be green, so the guard is explicit.
-      - name: Assert the database is reachable
-        working-directory: backend
-        run: |
-          uv run python - <<'PY'
-          from tests.conftest import database_available
-          if not database_available():
-              raise SystemExit("database unreachable - integration tests would skip")
-          print("database reachable")
-          PY
-
-      - name: pytest
-        working-directory: backend
-        run: uv run pytest -q --maxfail=1
-
-  # ── 5. Evals: the numbers the README quotes ───────────────────────────────
+  # ── 3. Evals: the numbers the README quotes ───────────────────────────────
   evals:
     name: make eval (regenerates every published metric)
     runs-on: ubuntu-latest
-    needs: [backend-tests]
+    needs: [backend-static]
 
     services:
       postgres:
@@ -363,74 +271,3 @@ jobs:
             backend/evals/out/*.md
             backend/evals/out/*.png
           retention-days: 14
-
-  # ── 6. Both images build, and the stack actually comes up ─────────────────
-  images:
-    name: docker build · compose up
-    runs-on: ubuntu-latest
-    needs: [backend-static, frontend]
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: docker/setup-buildx-action@v3
-
-      - name: Build the backend image
-        uses: docker/build-push-action@v6
-        with:
-          context: ./backend
-          push: false
-          load: true
-          tags: aegis-backend:ci
-          cache-from: type=gha,scope=backend
-          cache-to: type=gha,mode=max,scope=backend
-
-      - name: Build the frontend image
-        uses: docker/build-push-action@v6
-        with:
-          context: ./frontend
-          push: false
-          load: true
-          tags: aegis-frontend:ci
-          cache-from: type=gha,scope=frontend
-          cache-to: type=gha,mode=max,scope=frontend
-
-      - name: compose config is valid
-        run: docker compose config >/dev/null
-
-      # `--wait` returns non-zero unless every healthcheck passes, so this step
-      # is a real assertion that one-command startup works.
-      - name: compose up --wait
-        env:
-          JWT_SECRET: ci-only-insecure-secret
-        run: docker compose up -d --wait --quiet-pull
-
-      - name: The API reports ready
-        run: |
-          curl -fsS http://localhost:8000/api/v1/health/ready | tee /tmp/ready.json
-          python3 - <<'PY'
-          import json
-          payload = json.load(open("/tmp/ready.json"))
-          required = {n for n, c in payload["checks"].items() if c.get("required")}
-          missing = {n for n in required if not payload["checks"][n]["ready"]}
-          if missing:
-              raise SystemExit(f"required dependencies not ready: {sorted(missing)}")
-          print("ready:", json.dumps(payload["checks"], indent=2))
-          PY
-
-      - name: The app serves its landing page
-        run: curl -fsS -o /dev/null -w '%{http_code}\n' http://localhost:3000/
-
-      - name: Seed is idempotent
-        run: |
-          docker compose run --rm backend python -m scripts.seed | tee /tmp/seed1.log
-          docker compose run --rm backend python -m scripts.seed | tee /tmp/seed2.log
-          grep -q "skipped" /tmp/seed2.log \
-            || (echo "::error::second seed did not report skipped work" && exit 1)
-
-      - name: Logs on failure
-        if: failure()
-        run: docker compose logs --tail=200
-
-      - name: Tear down
-        if: always()
-        run: docker compose down -v

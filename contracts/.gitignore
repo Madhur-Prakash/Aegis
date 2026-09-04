@@ -1,4 +1,9 @@
 out/
 cache/
 broadcast/
-lib/
+# `forge-std` is a declared submodule the contracts import directly, so it is
+# tracked as a gitlink.  This file is deeper than the root .gitignore and wins,
+# so the exception has to be repeated here.  Anything else `forge install`
+# drops into lib/ stays out of the repo.
+lib/*
+!lib/forge-std

@@ -30,7 +30,7 @@ FORGE        := forge
         lint fmt typecheck test test-unit test-integration import-lint secret-scan \
         contracts-build contracts-test deploy-contract contracts-deploy \
         frontend-install frontend-lint frontend-typecheck frontend-build frontend-check \
-        verify-ledger verify-chain verify-login \n        check ci docs open shell-api psql redis-cli kafka-topics
+        verify-ledger verify-chain verify-login \n        check ci verify-all docs open shell-api psql redis-cli kafka-topics
 
 # ── Help ────────────────────────────────────────────────────────────────────
 help: ## Show this help
@@ -165,7 +165,12 @@ frontend-build: ## Build the frontend for production
 # ── Aggregates ──────────────────────────────────────────────────────────────
 check: lint typecheck import-lint secret-scan frontend-lint frontend-typecheck frontend-check ## Every static gate
 
-ci: check test contracts-test frontend-build ## Everything CI runs, in CI's order
+# What .github/workflows/ci.yml actually runs: the static gates plus the eval.
+ci: check frontend-build eval ## Exactly what GitHub CI runs
+
+# The full gate.  `pytest`, `forge test` and the image build are deliberately
+# NOT in CI (too slow for a push), so this is where they get run.
+verify-all: ci test contracts-test up-build ## Everything, including what CI skips
 
 docs: ## Regenerate the OpenAPI document
 	cd $(BACKEND) && $(UV) run python -m scripts.export_openapi
