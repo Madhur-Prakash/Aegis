@@ -1,0 +1,436 @@
+name: ci
+
+# Nothing here is allowed to pass by skipping.  The integration job provisions a
+# real Postgres and a real Redis, because the invariants those tests prove
+# (append-only triggers, unique indexes, row locking, the money CHECK constraint)
+# do not exist without them -- and a suite that quietly skips is a suite that
+# reports green while proving nothing.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PYTHON_VERSION: "3.12"
+  NODE_VERSION: "22"
+  UV_VERSION: "0.9.5"
+
+permissions:
+  contents: read
+
+jobs:
+  # ── 1. Backend static gates ───────────────────────────────────────────────
+  backend-static:
+    name: backend lint · typecheck · import-lint · secret-scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          version: ${{ env.UV_VERSION }}
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
+
+      - name: Install
+        working-directory: backend
+        run: uv sync --frozen --all-extras
+
+      - name: ruff check
+        working-directory: backend
+        run: uv run ruff check .
+
+      - name: ruff format --check
+        working-directory: backend
+        run: uv run ruff format --check .
+
+      - name: mypy
+        working-directory: backend
+        run: uv run mypy app
+
+      # I2: the settlement engine must be unreachable from the agent packages.
+      - name: import-lint (I2)
+        working-directory: backend
+        run: uv run python -m scripts.import_lint
+
+      # A lint that has never been seen to fail is a lint nobody should trust,
+      # so CI plants a real violation, requires the failure, and restores it.
+      - name: import-lint fails on a planted violation
+        working-directory: backend
+        run: |
+          set -e
+          cp app/agents/verifier/pipeline.py /tmp/pipeline.py.bak
+          printf '\nfrom app.settlement.engine import execute_authorization  # planted\n' \
+            >> app/agents/verifier/pipeline.py
+          if uv run python -m scripts.import_lint; then
+            cp /tmp/pipeline.py.bak app/agents/verifier/pipeline.py
+            echo "::error::import-lint did NOT fail on a planted violation"
+            exit 1
+          fi
+          cp /tmp/pipeline.py.bak app/agents/verifier/pipeline.py
+          uv run python -m scripts.import_lint
+          echo "import-lint fails on a violation and passes once restored"
+
+      - name: secret scan
+        working-directory: backend
+        run: uv run python -m scripts.secret_scan --path ..
+
+  # ── 2. Frontend static gates and build ────────────────────────────────────
+  frontend:
+    name: frontend lint · types · tokens · i18n · build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install
+        working-directory: frontend
+        run: npm ci --no-audit --no-fund
+
+      # Gated, not advisory.  Next 15 pins a vulnerable postcss internally; the
+      # `overrides` entry in package.json hoists the tree to 8.5.28 so this
+      # passes at 0 vulnerabilities rather than being waived.
+      - name: npm audit
+        working-directory: frontend
+        run: npm audit --audit-level=moderate
+
+      - name: ESLint
+        working-directory: frontend
+        run: npm run lint
+
+      - name: TypeScript
+        working-directory: frontend
+        run: npm run typecheck
+
+      # No component may contain a hex colour, a raw duration or an inline
+      # easing curve; the CSS duration scale must match design/motion.ts.
+      - name: Token discipline
+        working-directory: frontend
+        run: npm run check:tokens
+
+      - name: Token discipline fails on a planted hex colour
+        working-directory: frontend
+        run: |
+          set -e
+          cp components/domain/MoneyBar.tsx /tmp/MoneyBar.tsx.bak
+          sed -i 's/const segments = \[/const planted = "#ff00ff";\n  const segments = [/' \
+            components/domain/MoneyBar.tsx
+          if npm run --silent check:tokens; then
+            cp /tmp/MoneyBar.tsx.bak components/domain/MoneyBar.tsx
+            echo "::error::check-tokens did NOT fail on a planted hex colour"
+            exit 1
+          fi
+          cp /tmp/MoneyBar.tsx.bak components/domain/MoneyBar.tsx
+          npm run --silent check:tokens
+          echo "check-tokens fails on a hex colour and passes once restored"
+
+      # The CSS duration scale must equal `D` in design/motion.ts; prove the
+      # assertion is live rather than decorative.
+      - name: Token discipline fails on a divergent duration scale
+        working-directory: frontend
+        run: |
+          set -e
+          cp app/globals.css /tmp/globals.css.bak
+          sed -i 's/  --d-base: 0.26s;/  --d-base: 0.30s;/' app/globals.css
+          if npm run --silent check:tokens; then
+            cp /tmp/globals.css.bak app/globals.css
+            echo "::error::check-tokens did NOT fail on a divergent duration scale"
+            exit 1
+          fi
+          cp /tmp/globals.css.bak app/globals.css
+          npm run --silent check:tokens
+          echo "check-tokens fails on a divergent scale and passes once restored"
+
+      - name: Dictionary completeness
+        working-directory: frontend
+        run: npm run check:i18n
+
+      - name: Build
+        working-directory: frontend
+        run: npm run build
+
+  # ── 3. Contracts ──────────────────────────────────────────────────────────
+  contracts:
+    name: forge build · forge test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: stable
+
+      - name: forge build
+        working-directory: contracts
+        run: forge build --sizes
+
+      - name: forge test
+        working-directory: contracts
+        run: forge test -vv
+
+  # ── 4. Backend tests against real Postgres, Redis and Kafka ───────────────
+  backend-tests:
+    name: pytest (unit + integration)
+    runs-on: ubuntu-latest
+    needs: [backend-static]
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: aegis
+          POSTGRES_PASSWORD: aegis
+          POSTGRES_DB: aegis
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U aegis -d aegis"
+          --health-interval 3s
+          --health-timeout 3s
+          --health-retries 20
+
+      redis:
+        image: redis:7-alpine
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 3s
+          --health-timeout 3s
+          --health-retries 20
+
+    env:
+      DATABASE_URL: postgresql+asyncpg://aegis:aegis@localhost:5432/aegis
+      DATABASE_URL_SYNC: postgresql+psycopg://aegis:aegis@localhost:5432/aegis
+      REDIS_URL: redis://localhost:6379/0
+      # Kafka is exercised by its own step below; the test suite runs with the
+      # in-memory bus so a broker hiccup cannot flake an assertion about money.
+      KAFKA_ENABLED: "false"
+      LOG_TO_KAFKA: "false"
+      AI_PROVIDER: fixture
+      PAYMENT_RAIL: simulated
+      CHAIN_ENABLED: "false"
+      DEMO_MODE: "true"
+      JWT_SECRET: ci-only-insecure-secret
+      OBJECT_STORE: local
+      LOCAL_STORE_PATH: /tmp/aegis-evidence
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          version: ${{ env.UV_VERSION }}
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
+
+      - name: Install
+        working-directory: backend
+        run: uv sync --frozen --all-extras
+
+      - name: Migrate
+        working-directory: backend
+        run: uv run alembic upgrade head
+
+      # If Postgres were unreachable the integration tests would skip and the
+      # job would still be green, so the guard is explicit.
+      - name: Assert the database is reachable
+        working-directory: backend
+        run: |
+          uv run python - <<'PY'
+          from tests.conftest import database_available
+          if not database_available():
+              raise SystemExit("database unreachable — integration tests would skip")
+          print("database reachable")
+          PY
+
+      - name: pytest
+        working-directory: backend
+        run: uv run pytest -q --maxfail=1
+
+  # ── 5. Evals: the numbers the README quotes ───────────────────────────────
+  evals:
+    name: make eval (regenerates every published metric)
+    runs-on: ubuntu-latest
+    needs: [backend-tests]
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: aegis
+          POSTGRES_PASSWORD: aegis
+          POSTGRES_DB: aegis
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U aegis -d aegis"
+          --health-interval 3s
+          --health-timeout 3s
+          --health-retries 20
+
+      redis:
+        image: redis:7-alpine
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 3s
+          --health-timeout 3s
+          --health-retries 20
+
+    env:
+      DATABASE_URL: postgresql+asyncpg://aegis:aegis@localhost:5432/aegis
+      DATABASE_URL_SYNC: postgresql+psycopg://aegis:aegis@localhost:5432/aegis
+      REDIS_URL: redis://localhost:6379/0
+      KAFKA_ENABLED: "false"
+      LOG_TO_KAFKA: "false"
+      AI_PROVIDER: fixture
+      PAYMENT_RAIL: simulated
+      CHAIN_ENABLED: "false"
+      DEMO_MODE: "true"
+      JWT_SECRET: ci-only-insecure-secret
+      OBJECT_STORE: local
+      LOCAL_STORE_PATH: /tmp/aegis-evidence
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          version: ${{ env.UV_VERSION }}
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
+
+      - name: Install
+        working-directory: backend
+        run: uv sync --frozen --all-extras
+
+      - name: Migrate
+        working-directory: backend
+        run: uv run alembic upgrade head
+
+      - name: Generate the deterministic corpus
+        working-directory: backend
+        run: uv run python -m scripts.generate_dataset --seed 42
+
+      - name: Run every suite
+        working-directory: backend
+        run: uv run python -m evals.run_all
+
+      # The hard gate: zero false releases, or the build fails.  A metric being
+      # merely "good" is not the bar here.
+      - name: Assert the hard gate
+        working-directory: backend
+        run: |
+          uv run python - <<'PY'
+          import json
+          from pathlib import Path
+
+          summary = json.loads(Path("evals/out/summary.json").read_text(encoding="utf-8"))
+          headline = summary["headline"]
+          failures = []
+          if headline["false_releases"] != 0:
+              failures.append(f"false_releases = {headline['false_releases']}, must be 0")
+          if not summary["all_green"]:
+              failures.append("a suite did not pass")
+          if headline["suite_b"] != "PASS":
+              failures.append(f"suite_b = {headline['suite_b']}")
+          if headline["suite_c"] != "PASS":
+              failures.append(f"suite_c = {headline['suite_c']}")
+          if not headline["escalation_in_band"]:
+              failures.append(f"escalation_rate {headline['escalation_rate']} out of band")
+          if failures:
+              raise SystemExit("hard gate failed:\n  " + "\n  ".join(failures))
+          print("hard gate passed: 0 false releases, every suite green")
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: eval-results
+          path: |
+            backend/evals/out/*.json
+            backend/evals/out/*.md
+            backend/evals/out/*.png
+          retention-days: 14
+
+  # ── 6. Both images build, and the stack actually comes up ─────────────────
+  images:
+    name: docker build · compose up
+    runs-on: ubuntu-latest
+    needs: [backend-static, frontend]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build the backend image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          push: false
+          load: true
+          tags: aegis-backend:ci
+          cache-from: type=gha,scope=backend
+          cache-to: type=gha,mode=max,scope=backend
+
+      - name: Build the frontend image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./frontend
+          push: false
+          load: true
+          tags: aegis-frontend:ci
+          cache-from: type=gha,scope=frontend
+          cache-to: type=gha,mode=max,scope=frontend
+
+      - name: compose config is valid
+        run: docker compose config >/dev/null
+
+      # `--wait` returns non-zero unless every healthcheck passes, so this step
+      # is a real assertion that one-command startup works.
+      - name: compose up --wait
+        env:
+          JWT_SECRET: ci-only-insecure-secret
+        run: docker compose up -d --wait --quiet-pull
+
+      - name: The API reports ready
+        run: |
+          curl -fsS http://localhost:8000/api/v1/health/ready | tee /tmp/ready.json
+          python3 - <<'PY'
+          import json
+          payload = json.load(open("/tmp/ready.json"))
+          required = {n for n, c in payload["checks"].items() if c.get("required")}
+          missing = {n for n in required if not payload["checks"][n]["ready"]}
+          if missing:
+              raise SystemExit(f"required dependencies not ready: {sorted(missing)}")
+          print("ready:", json.dumps(payload["checks"], indent=2))
+          PY
+
+      - name: The app serves its landing page
+        run: curl -fsS -o /dev/null -w '%{http_code}\n' http://localhost:3000/
+
+      - name: Seed is idempotent
+        run: |
+          docker compose run --rm backend python -m scripts.seed | tee /tmp/seed1.log
+          docker compose run --rm backend python -m scripts.seed | tee /tmp/seed2.log
+          grep -q "skipped" /tmp/seed2.log \
+            || (echo "::error::second seed did not report skipped work" && exit 1)
+
+      - name: Logs on failure
+        if: failure()
+        run: docker compose logs --tail=200
+
+      - name: Tear down
+        if: always()
+        run: docker compose down -v

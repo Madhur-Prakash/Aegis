@@ -1,0 +1,51 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+htmlcov/
+.coverage
+
+# Runtime logs (logifyx writes one file per logger)
+backend/logs/
+logs/
+
+# Node
+node_modules/
+.next/
+out/
+.turbo/
+*.tsbuildinfo
+
+# Env & secrets
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+
+# Generated data (regenerate with `make dataset`)
+data/generated/
+backend/evals/out/
+backend/data/
+
+# Reference recordings (motion references, never committed)
+*.mp4
+*.mov
+
+# Foundry
+contracts/out/
+contracts/cache/
+contracts/broadcast/
+contracts/lib/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Verification cookie jar (make verify-login)
+backend/.verify-cookies

@@ -1,0 +1,98 @@
+[project]
+name = "aegis"
+version = "1.0.0"
+description = "Aegis — programmable escrow for agentic commerce"
+requires-python = "==3.12.*"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.32",
+    "sqlalchemy>=2.0.36",
+    "alembic>=1.14",
+    "pydantic>=2.9",
+    "pydantic-settings>=2.6",
+    "asyncpg>=0.30",
+    "psycopg[binary]>=3.2",
+    "greenlet>=3.1",
+    "redis>=5.2",
+    "aiokafka>=0.12",
+    "anthropic>=0.40",
+    "httpx>=0.27",
+    "argon2-cffi>=23.1",
+    "pyjwt>=2.10",
+    "python-multipart>=0.0.17",
+    "email-validator>=2.2",
+    "boto3>=1.35",
+    "eth-account>=0.13",
+    "web3>=7.6",
+    "lightgbm>=4.5",
+    "scikit-learn>=1.5",
+    "numpy>=2.0",
+    "pandas>=2.2",
+    "pyarrow>=18.0",
+    "matplotlib>=3.9",
+    "reportlab>=4.2",
+    "pillow>=11.0",
+    "pypdf>=5.1",
+    "logifyx>=1.1.3",
+    "arq>=0.26",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3",
+    "pytest-asyncio>=0.24",
+    "hypothesis>=6.119",
+    "ruff>=0.8",
+    "mypy>=1.13",
+    "types-requests",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["app"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+extend-exclude = ["migrations/versions"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "C4", "SIM", "RUF"]
+ignore = ["B008", "RUF012", "SIM108", "E501"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["B011", "SIM117"]
+"evals/**" = ["E402"]
+"scripts/**" = ["E402"]
+
+[tool.mypy]
+python_version = "3.12"
+plugins = []
+ignore_missing_imports = true
+warn_unused_ignores = false
+check_untyped_defs = true
+disallow_untyped_defs = false
+exclude = "(migrations/|tests/|evals/)"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+# No test may hang the suite.  An SSE endpoint never completes on its own, and a
+# deadlocked settlement claim would otherwise stall CI rather than fail it.
+timeout = 120
+testpaths = ["tests"]
+filterwarnings = ["ignore::DeprecationWarning"]
+markers = [
+    "requires_db: needs a live Postgres",
+    "requires_kafka: needs a live Kafka broker",
+    "slow: long-running",
+]
+
+[dependency-groups]
+dev = [
+    "asgi-lifespan>=2.1.0",
+    "pytest-timeout>=2.4.0",
+]

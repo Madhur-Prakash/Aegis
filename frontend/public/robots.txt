@@ -1,0 +1,4 @@
+# Aegis is a demo deployment holding real deal data behind authentication.
+# Nothing here should be indexed.
+User-agent: *
+Disallow: /

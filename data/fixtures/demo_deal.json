@@ -1,0 +1,253 @@
+{
+  "buyer": {
+    "city": "Bengaluru",
+    "entity_name": "Meridian Label Procurement",
+    "org_name": "Meridian Label",
+    "owner_email": "owner@meridian.demo",
+    "owner_name": "Aditi Rao",
+    "region": "Bengaluru, Karnataka",
+    "slug": "meridian-label"
+  },
+  "category": "apparel",
+  "dispute_window_days": 7,
+  "expected_narrative": {
+    "milestone_1": "all required clauses PASS -> RELEASE, INR 1,26,000 settles",
+    "milestone_2": "the '500 finished units' clause returns UNVERIFIABLE -> ESCALATE, no money moves, human review appears",
+    "milestone_3": "buyer disputes 60 of 500 units for colour variance; the arbiter applies the tolerance clause (60 x 84000 paise x 20% = 1008000 paise) and recommends PARTIAL: release 11592000 / refund 1008000; a human approves",
+    "note": "These outcomes are produced by the real pipeline. No milestone is special-cased. The measured confidence values are written by `make eval` and `make demo`."
+  },
+  "milestones": [
+    {
+      "amount_paise": 12600000,
+      "evidence": "fabric",
+      "seq": 1,
+      "title": "Fabric procured",
+      "verification_condition": {
+        "clauses": [
+          {
+            "description": "Supplier invoice present and readable",
+            "id": "c1",
+            "kind": "ARTIFACT_PRESENT",
+            "params": {
+              "artifact_types": [
+                "INVOICE"
+              ],
+              "min_count": 1
+            },
+            "required": true
+          },
+          {
+            "description": "Goods receipt note present and readable",
+            "id": "c2",
+            "kind": "ARTIFACT_PRESENT",
+            "params": {
+              "artifact_types": [
+                "GRN"
+              ],
+              "min_count": 1
+            },
+            "required": true
+          },
+          {
+            "description": "Fabric code is CT-240-IVY",
+            "id": "c3",
+            "kind": "FIELD_EQUALS",
+            "params": {
+              "artifact_types": [
+                "INVOICE",
+                "GRN"
+              ],
+              "field": "item_code",
+              "value": "CT-240-IVY"
+            },
+            "required": true
+          },
+          {
+            "description": "Quantity received is at least 520 m",
+            "id": "c4",
+            "kind": "QUANTITY_AT_LEAST",
+            "params": {
+              "artifact_types": [
+                "GRN",
+                "INVOICE"
+              ],
+              "field": "quantity",
+              "min": 520.0
+            },
+            "required": true
+          },
+          {
+            "description": "Dated between 2026-08-15 and 2026-09-10",
+            "id": "c5",
+            "kind": "DATE_WITHIN",
+            "params": {
+              "artifact_types": [
+                "INVOICE",
+                "GRN"
+              ],
+              "field": "date",
+              "from": "2026-08-15",
+              "to": "2026-09-10"
+            },
+            "required": true
+          }
+        ],
+        "required_artifact_types": [
+          "INVOICE",
+          "GRN"
+        ],
+        "tolerance": {}
+      }
+    },
+    {
+      "amount_paise": 16800000,
+      "evidence": "production",
+      "seq": 2,
+      "title": "Production complete",
+      "verification_condition": {
+        "clauses": [
+          {
+            "description": "Photo set present and legible",
+            "id": "c1",
+            "kind": "ARTIFACT_PRESENT",
+            "params": {
+              "artifact_types": [
+                "PHOTO_SET"
+              ],
+              "min_count": 4
+            },
+            "required": true
+          },
+          {
+            "description": "500 finished units evidenced",
+            "id": "c2",
+            "kind": "QUANTITY_AT_LEAST",
+            "params": {
+              "artifact_types": [
+                "PHOTO_SET"
+              ],
+              "field": "unit_count",
+              "min": 500.0
+            },
+            "required": true
+          },
+          {
+            "description": "Matches approved specification CT-240-IVY",
+            "id": "c3",
+            "kind": "VISUAL_CONSISTENT_WITH",
+            "params": {
+              "artifact_types": [
+                "PHOTO_SET"
+              ],
+              "colour": "#efe7d3",
+              "tolerance": 60
+            },
+            "required": true
+          }
+        ],
+        "required_artifact_types": [
+          "PHOTO_SET",
+          "SPEC_REFERENCE"
+        ],
+        "tolerance": {}
+      }
+    },
+    {
+      "amount_paise": 12600000,
+      "evidence": "delivery",
+      "seq": 3,
+      "title": "Delivered & accepted",
+      "verification_condition": {
+        "clauses": [
+          {
+            "description": "Signed delivery challan present",
+            "id": "c1",
+            "kind": "ARTIFACT_PRESENT",
+            "params": {
+              "artifact_types": [
+                "DELIVERY_CHALLAN"
+              ],
+              "min_count": 1
+            },
+            "required": true
+          },
+          {
+            "description": "Condition report present",
+            "id": "c2",
+            "kind": "ARTIFACT_PRESENT",
+            "params": {
+              "artifact_types": [
+                "CONDITION_REPORT"
+              ],
+              "min_count": 1
+            },
+            "required": true
+          },
+          {
+            "description": "Challan carries a signatory",
+            "id": "c3",
+            "kind": "FIELD_MATCHES_SPEC",
+            "params": {
+              "artifact_types": [
+                "DELIVERY_CHALLAN"
+              ],
+              "field": "signed_by",
+              "pattern": ".{3,}"
+            },
+            "required": true
+          },
+          {
+            "description": "Delivered between 2026-08-15 and 2026-09-10",
+            "id": "c4",
+            "kind": "DATE_WITHIN",
+            "params": {
+              "artifact_types": [
+                "DELIVERY_CHALLAN"
+              ],
+              "field": "date",
+              "from": "2026-08-15",
+              "to": "2026-09-10"
+            },
+            "required": true
+          }
+        ],
+        "required_artifact_types": [
+          "DELIVERY_CHALLAN",
+          "CONDITION_REPORT"
+        ],
+        "tolerance": {}
+      }
+    }
+  ],
+  "reference": "D-4812",
+  "seller": {
+    "city": "Tiruppur",
+    "entity_name": "Tirupur Exports Manufacturing",
+    "org_name": "Tirupur Exports",
+    "owner_email": "owner@tirupur.demo",
+    "owner_name": "S. Murugan",
+    "region": "Tiruppur, Tamil Nadu",
+    "slug": "tirupur-exports"
+  },
+  "seller_profile": {
+    "category": "apparel",
+    "counterparty_since": "2025-03-14",
+    "deals_completed": 11,
+    "disputes_lost": 0,
+    "disputes_raised": 1,
+    "gmv_paise": 314000000,
+    "largest_deal_paise": 62000000,
+    "on_time_rate": 0.91
+  },
+  "title": "500 custom kurtas",
+  "tolerance": {
+    "clause_ids": [
+      "t1"
+    ],
+    "description": "Colour variance beyond the approved swatch attracts a 20% deduction per affected unit.",
+    "total_units": 500,
+    "unit_price_paise": 84000,
+    "variance_deduction_pct": 20
+  },
+  "total_paise": 42000000
+}

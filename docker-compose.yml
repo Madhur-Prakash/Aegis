@@ -1,0 +1,261 @@
+name: aegis
+
+x-backend-env: &backend-env
+  DATABASE_URL: postgresql+asyncpg://aegis:aegis@postgres:5432/aegis
+  DATABASE_URL_SYNC: postgresql+psycopg://aegis:aegis@postgres:5432/aegis
+  REDIS_URL: redis://redis:6379/0
+  KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+  KAFKA_ENABLED: "true"
+  LOG_TO_KAFKA: "true"
+  OBJECT_STORE: local
+  LOCAL_STORE_PATH: /data/evidence
+  SMTP_HOST: mailpit
+  SMTP_PORT: "1025"
+  PUBLIC_APP_URL: http://localhost:3000
+  DEMO_MODE: ${DEMO_MODE:-true}
+  LOG_LEVEL: ${LOG_LEVEL:-INFO}
+  LOG_DIR: /app/logs
+  JWT_SECRET: ${JWT_SECRET:-dev-only-insecure-secret-change-me}
+  PAYMENT_RAIL: ${PAYMENT_RAIL:-simulated}
+  RAZORPAY_KEY_ID: ${RAZORPAY_KEY_ID:-}
+  RAZORPAY_KEY_SECRET: ${RAZORPAY_KEY_SECRET:-}
+  RAZORPAY_WEBHOOK_SECRET: ${RAZORPAY_WEBHOOK_SECRET:-}
+  RAZORPAY_ROUTE_SELLER_ACCOUNT: ${RAZORPAY_ROUTE_SELLER_ACCOUNT:-}
+  AI_PROVIDER: ${AI_PROVIDER:-fixture}
+  AI_API_KEY: ${AI_API_KEY:-}
+  AI_MODEL_VERIFIER: ${AI_MODEL_VERIFIER:-claude-opus-5}
+  AI_MODEL_ARBITER: ${AI_MODEL_ARBITER:-claude-opus-5}
+  AI_MODEL_EXTRACTION: ${AI_MODEL_EXTRACTION:-claude-sonnet-5}
+  GROQ_API_KEY: ${GROQ_API_KEY:-}
+  GROQ_BASE_URL: ${GROQ_BASE_URL:-https://api.groq.com/openai/v1}
+  GROQ_MODEL_VERIFIER: ${GROQ_MODEL_VERIFIER:-llama-3.3-70b-versatile}
+  GROQ_MODEL_ARBITER: ${GROQ_MODEL_ARBITER:-llama-3.3-70b-versatile}
+  GROQ_MODEL_EXTRACTION: ${GROQ_MODEL_EXTRACTION:-llama-3.3-70b-versatile}
+  CHAIN_ENABLED: ${CHAIN_ENABLED:-true}
+  BLOCKCHAIN_RPC_URL: ${BLOCKCHAIN_RPC_URL:-https://sepolia.base.org}
+  CHAIN_ID: ${CHAIN_ID:-84532}
+  CONTRACT_ADDRESS: ${CONTRACT_ADDRESS:-}
+  OPERATOR_PRIVATE_KEY: ${OPERATOR_PRIVATE_KEY:-}
+  VERIFIER_PRIVATE_KEY: ${VERIFIER_PRIVATE_KEY:-}
+  DEMO_BUYER_EMAIL: ${DEMO_BUYER_EMAIL:-owner@meridian.demo}
+  DEMO_SELLER_EMAIL: ${DEMO_SELLER_EMAIL:-owner@tirupur.demo}
+  DEMO_BUYER_PASSWORD: ${DEMO_BUYER_PASSWORD:-aegis-demo-buyer-pw}
+  DEMO_SELLER_PASSWORD: ${DEMO_SELLER_PASSWORD:-aegis-demo-seller-pw}
+  CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000,http://127.0.0.1:3000}
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: aegis
+      POSTGRES_PASSWORD: aegis
+      POSTGRES_DB: aegis
+    ports: ["5432:5432"]
+    volumes: ["pgdata:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U aegis -d aegis"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+      start_period: 10s
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    ports: ["6379:6379"]
+    volumes: ["redisdata:/data"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  kafka:
+    image: bitnamilegacy/kafka:3.9.0
+    environment:
+      KAFKA_CFG_NODE_ID: "1"
+      KAFKA_CFG_PROCESS_ROLES: broker,controller
+      KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_CFG_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093,EXTERNAL://:29092
+      KAFKA_CFG_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,EXTERNAL://localhost:29092
+      KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_CFG_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_CFG_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_CFG_OFFSETS_TOPIC_REPLICATION_FACTOR: "1"
+      KAFKA_CFG_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: "1"
+      KAFKA_CFG_TRANSACTION_STATE_LOG_MIN_ISR: "1"
+      KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE: "true"
+      ALLOW_PLAINTEXT_LISTENER: "yes"
+    ports: ["29092:29092"]
+    volumes: ["kafkadata:/bitnami/kafka"]
+    healthcheck:
+      # A real readiness probe, not a sleep: one-command startup depends on it.
+      test:
+        ["CMD-SHELL", "kafka-broker-api-versions.sh --bootstrap-server localhost:9092 >/dev/null 2>&1"]
+      interval: 5s
+      timeout: 10s
+      retries: 30
+      start_period: 20s
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    environment:
+      KAFKA_CLUSTERS_0_NAME: aegis
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
+      DYNAMIC_CONFIG_ENABLED: "true"
+    ports: ["8080:8080"]
+    depends_on:
+      kafka: { condition: service_healthy }
+
+  mailpit:
+    image: axllent/mailpit:latest
+    ports: ["1025:1025", "8025:8025"]
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z localhost 1025 || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  minio:
+    image: minio/minio:latest
+    profiles: ["minio"]
+    command: ["server", "/data", "--console-address", ":9001"]
+    environment:
+      MINIO_ROOT_USER: aegis
+      MINIO_ROOT_PASSWORD: aegis-minio-dev
+    ports: ["9000:9000", "9001:9001"]
+    volumes: ["miniodata:/data"]
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # Migrations run from exactly one place, behind a Postgres advisory lock, so
+  # api/worker/relay cannot race (spec 7, 27).
+  migrate:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    environment:
+      <<: *backend-env
+      SERVICE_NAME: aegis-migrate
+    command: ["/app/entrypoint.sh", "migrate"]
+    depends_on:
+      postgres: { condition: service_healthy }
+    volumes:
+      # Artifact bytes are written by the API, so they live in a named volume.
+      - "evidence:/data/evidence"
+      # The demo fixture and the fitted calibration are repo data, produced on the
+      # host by `make dataset` / `make eval`.  Mounted read-only so the container
+      # uses exactly what was measured; when absent the calibration falls back to
+      # identity and every attestation records `identity-fallback` as its version.
+      - "./data/fixtures:/data/fixtures:ro"
+      - "./data/generated:/data/generated:ro"
+    restart: "no"
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    environment:
+      <<: *backend-env
+      SERVICE_NAME: aegis-api
+    command: ["/app/entrypoint.sh", "api"]
+    ports: ["8000:8000"]
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+      kafka: { condition: service_healthy }
+      migrate: { condition: service_completed_successfully }
+    volumes:
+      # Artifact bytes are written by the API, so they live in a named volume.
+      - "evidence:/data/evidence"
+      # The demo fixture and the fitted calibration are repo data, produced on the
+      # host by `make dataset` / `make eval`.  Mounted read-only so the container
+      # uses exactly what was measured; when absent the calibration falls back to
+      # identity and every attestation records `identity-fallback` as its version.
+      - "./data/fixtures:/data/fixtures:ro"
+      - "./data/generated:/data/generated:ro"
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request,sys;sys.exit(0 if urllib.request.urlopen('http://localhost:8000/api/v1/health/live',timeout=3).status==200 else 1)\""]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 15s
+
+  worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    environment:
+      <<: *backend-env
+      SERVICE_NAME: aegis-worker
+    command: ["/app/entrypoint.sh", "worker"]
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+      kafka: { condition: service_healthy }
+      migrate: { condition: service_completed_successfully }
+    volumes:
+      # Artifact bytes are written by the API, so they live in a named volume.
+      - "evidence:/data/evidence"
+      # The demo fixture and the fitted calibration are repo data, produced on the
+      # host by `make dataset` / `make eval`.  Mounted read-only so the container
+      # uses exactly what was measured; when absent the calibration falls back to
+      # identity and every attestation records `identity-fallback` as its version.
+      - "./data/fixtures:/data/fixtures:ro"
+      - "./data/generated:/data/generated:ro"
+
+  relay:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    environment:
+      <<: *backend-env
+      SERVICE_NAME: aegis-relay
+    command: ["/app/entrypoint.sh", "relay"]
+    depends_on:
+      postgres: { condition: service_healthy }
+      kafka: { condition: service_healthy }
+      migrate: { condition: service_completed_successfully }
+    volumes:
+      # Artifact bytes are written by the API, so they live in a named volume.
+      - "evidence:/data/evidence"
+      # The demo fixture and the fitted calibration are repo data, produced on the
+      # host by `make dataset` / `make eval`.  Mounted read-only so the container
+      # uses exactly what was measured; when absent the calibration falls back to
+      # identity and every attestation records `identity-fallback` as its version.
+      - "./data/fixtures:/data/fixtures:ro"
+      - "./data/generated:/data/generated:ro"
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_BASE: ${NEXT_PUBLIC_API_BASE:-http://localhost:8000}
+        NEXT_PUBLIC_CHAIN_EXPLORER: ${NEXT_PUBLIC_CHAIN_EXPLORER:-https://sepolia.basescan.org}
+        NEXT_PUBLIC_CHAIN_ID: ${NEXT_PUBLIC_CHAIN_ID:-84532}
+    environment:
+      NEXT_PUBLIC_API_BASE: ${NEXT_PUBLIC_API_BASE:-http://localhost:8000}
+      NEXT_PUBLIC_CHAIN_EXPLORER: ${NEXT_PUBLIC_CHAIN_EXPLORER:-https://sepolia.basescan.org}
+      NEXT_PUBLIC_CHAIN_ID: ${NEXT_PUBLIC_CHAIN_ID:-84532}
+      API_INTERNAL_BASE: http://backend:8000
+    ports: ["3000:3000"]
+    depends_on:
+      backend: { condition: service_healthy }
+    healthcheck:
+      test:
+        ["CMD-SHELL", "node -e \"require('http').get('http://127.0.0.1:3000/', r => process.exit(r.statusCode < 500 ? 0 : 1)).on('error', () => process.exit(1))\""]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+
+volumes:
+  pgdata:
+  redisdata:
+  kafkadata:
+  miniodata:
+  evidence:

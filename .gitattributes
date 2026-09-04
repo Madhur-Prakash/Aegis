@@ -1,0 +1,8 @@
+# One line ending everywhere.  Windows text-mode writes were silently producing
+# CRLF, which breaks shell heredocs, Docker entrypoints and diff readability.
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.parquet binary
+*.pdf binary

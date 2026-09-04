@@ -1,0 +1,173 @@
+/* ─────────────────────────────────────────────────────────────────────────
+   AEGIS DESIGN TOKENS — the only file in the project that defines a colour,
+   a size, or a radius. Components reference tokens; never literals.
+   Dark is the default. Light inverts neutrals; semantic hues darken for AA.
+   ───────────────────────────────────────────────────────────────────────── */
+:root {
+  color-scheme: dark;
+
+  /* ── Neutrals (dark, default) ─────────────────────────────── */
+  --ink-900:  #08080A;
+  --ink-800:  #0D0D10;
+  --ink-700:  #14141A;
+  --ink-600:  #1D1D24;
+  --line-1:   #24242C;
+  --line-2:   #34343E;
+  --grey-500: #6B6B78;
+  --grey-300: #9A9AA8;
+  --bone-100: #F2EFE9;
+  --white:    #FFFFFF;
+
+  /* ── Semantic hues — the ONLY colour in the product ───────── */
+  --sig-pass:        #4FD1A5;
+  --sig-unverified:  #FFC24B;
+  --sig-fail:        #FF4A4A;
+  --sig-pass-tint:        color-mix(in oklab, var(--sig-pass) 12%, transparent);
+  --sig-unverified-tint:  color-mix(in oklab, var(--sig-unverified) 14%, transparent);
+  --sig-fail-tint:        color-mix(in oklab, var(--sig-fail) 12%, transparent);
+  --sig-pass-edge:        color-mix(in oklab, var(--sig-pass) 40%, transparent);
+  --sig-unverified-edge:  color-mix(in oklab, var(--sig-unverified) 45%, transparent);
+  --sig-fail-edge:        color-mix(in oklab, var(--sig-fail) 40%, transparent);
+
+  /* ── Roles ────────────────────────────────────────────────── */
+  --bg:            var(--ink-900);
+  --bg-raised:     var(--ink-800);
+  --bg-raised-hi:  var(--ink-700);
+  --fg:            var(--bone-100);
+  --fg-display:    var(--white);
+  --fg-secondary:  var(--grey-300);
+  --fg-micro:      var(--grey-500);
+  --border:        var(--line-1);
+  --border-strong: var(--line-2);
+  --focus:         var(--bone-100);
+
+  /* money states map onto semantics */
+  --money-held:     var(--sig-unverified);
+  --money-released: var(--sig-pass);
+  --money-refunded: var(--grey-300);
+
+  /* ── Type ─────────────────────────────────────────────────── */
+  --font-display: Satoshi, Inter, system-ui, sans-serif;
+  --font-mono:    "JetBrains Mono", ui-monospace, "SF Mono", monospace;
+
+  --fs-display-1: clamp(3.25rem, 11vw, 9rem);
+  --fs-display-2: clamp(2.5rem, 7vw, 5rem);
+  --fs-display-3: clamp(1.75rem, 4vw, 3rem);
+  --fs-h4:        clamp(1.125rem, 2vw, 1.5rem);
+  --fs-body:      1rem;
+  --fs-sm:        0.875rem;
+  --fs-micro:     0.6875rem;
+  --fs-nano:      0.625rem;
+
+  --lh-display-1: 0.86;  --tr-display-1: -0.03em;
+  --lh-display-2: 0.90;  --tr-display-2: -0.025em;
+  --lh-display-3: 0.95;  --tr-display-3: -0.02em;
+  --lh-body:      1.55;
+  --tr-micro:     0.09em;
+
+  /* ── Space & shape ────────────────────────────────────────── */
+  --sp-1: .25rem; --sp-2: .5rem;  --sp-3: .75rem; --sp-4: 1rem;
+  --sp-5: 1.5rem; --sp-6: 2rem;   --sp-7: 3rem;   --sp-8: 4.5rem;
+  --gutter:  clamp(1.25rem, 5vw, 4.5rem);
+  --section: clamp(4.5rem, 12vh, 10rem);
+  --container: 1440px;
+  --grid-gap:  clamp(1rem, 2vw, 1.75rem);
+
+  --r-sm: 6px; --r-md: 10px; --r-lg: 16px; --r-full: 999px;
+  --hairline: 1px solid var(--border);
+  --lift: inset 0 1px 0 rgb(255 255 255 / .04);
+
+  /* ── Cursor ───────────────────────────────────────────────── */
+  --cursor-dot:  8px;
+  --cursor-disc: 48px;
+
+  /* ── Z ────────────────────────────────────────────────────── */
+  --z-base: 0; --z-sticky: 10; --z-nav: 20; --z-modal: 40;
+  --z-toast: 50; --z-cursor: 90; --z-boot: 100;
+}
+
+/* System-preference dark: already the default — nothing to redefine. */
+
+/* Explicit light theme */
+:root[data-theme="light"] {
+  color-scheme: light;
+  --ink-900:  #F2EFE9;
+  --ink-800:  #FFFFFF;
+  --ink-700:  #F7F5F1;
+  --ink-600:  #EBE7E0;
+  --line-1:   #DCD7CE;
+  --line-2:   #C6C0B4;
+  --grey-500: #77736A;
+  --grey-300: #56534C;
+  --bone-100: #0D0D10;
+  --white:    #08080A;
+
+  --sig-pass:       #128A63;
+  --sig-unverified: #9A6400;
+  --sig-fail:       #C42121;
+
+  --fg-display: var(--white);
+  --focus:      var(--ink-900);
+  --lift:       0 1px 2px rgb(8 8 10 / .06);
+}
+
+/* System-preference light, when the user has made no explicit choice */
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]):not([data-theme="light"]) {
+    color-scheme: light;
+    --ink-900:  #F2EFE9;  --ink-800:  #FFFFFF;  --ink-700: #F7F5F1;
+    --ink-600:  #EBE7E0;  --line-1:   #DCD7CE;  --line-2:  #C6C0B4;
+    --grey-500: #77736A;  --grey-300: #56534C;
+    --bone-100: #0D0D10;  --white:    #08080A;
+    --sig-pass: #128A63;  --sig-unverified: #9A6400; --sig-fail: #C42121;
+    --fg-display: var(--white);
+    --focus: var(--ink-900);
+    --lift: 0 1px 2px rgb(8 8 10 / .06);
+  }
+}
+
+/* ── Base ───────────────────────────────────────────────────── */
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font: 400 var(--fs-body)/var(--lh-body) var(--font-display);
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;              /* the page never scrolls sideways */
+}
+*, *::before, *::after { box-sizing: border-box; }
+img, video, svg { max-width: 100%; display: block; }
+
+:where(a, button, [tabindex]):focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 3px;
+  border-radius: var(--r-sm);
+}
+
+.display-1 { font: 900 var(--fs-display-1)/var(--lh-display-1) var(--font-display);
+             letter-spacing: var(--tr-display-1); color: var(--fg-display);
+             text-wrap: balance; margin: 0; }
+.display-2 { font: 900 var(--fs-display-2)/var(--lh-display-2) var(--font-display);
+             letter-spacing: var(--tr-display-2); color: var(--fg-display);
+             text-wrap: balance; margin: 0; }
+.display-3 { font: 500 var(--fs-display-3)/var(--lh-display-3) var(--font-display);
+             letter-spacing: var(--tr-display-3); color: var(--fg-display); margin: 0; }
+
+.w-solid { color: var(--fg-display); }
+.w-muted { color: var(--fg-micro); }
+
+.micro { font: 500 var(--fs-micro)/1.3 var(--font-mono);
+         letter-spacing: var(--tr-micro); text-transform: uppercase;
+         color: var(--fg-micro); white-space: nowrap; }
+.nano  { font: 500 var(--fs-nano)/1.25 var(--font-mono);
+         letter-spacing: .11em; text-transform: uppercase; color: var(--fg-micro); }
+.num   { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+
+.rule    { border: 0; border-top: var(--hairline); margin: 0; }
+.scroll-x { overflow-x: auto; overscroll-behavior-x: contain; }
+
+/* Hide the native cursor only where the custom one is active (pointer devices) */
+@media (hover: hover) and (pointer: fine) {
+  body[data-cursor="on"], body[data-cursor="on"] * { cursor: none; }
+}

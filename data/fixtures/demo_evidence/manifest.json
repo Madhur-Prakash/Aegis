@@ -1,0 +1,53 @@
+{
+  "delivery": [
+    {
+      "artifact_type": "DELIVERY_CHALLAN",
+      "filename": "challan-4812.pdf",
+      "mime": "application/pdf"
+    },
+    {
+      "artifact_type": "CONDITION_REPORT",
+      "filename": "condition-4812.pdf",
+      "mime": "application/pdf"
+    }
+  ],
+  "fabric": [
+    {
+      "artifact_type": "INVOICE",
+      "filename": "invoice-ct240.pdf",
+      "mime": "application/pdf"
+    },
+    {
+      "artifact_type": "GRN",
+      "filename": "grn-ct240.pdf",
+      "mime": "application/pdf"
+    }
+  ],
+  "production": [
+    {
+      "artifact_type": "PHOTO_SET",
+      "filename": "line-01.png",
+      "mime": "image/png"
+    },
+    {
+      "artifact_type": "PHOTO_SET",
+      "filename": "line-02.png",
+      "mime": "image/png"
+    },
+    {
+      "artifact_type": "PHOTO_SET",
+      "filename": "line-03.png",
+      "mime": "image/png"
+    },
+    {
+      "artifact_type": "PHOTO_SET",
+      "filename": "line-04.png",
+      "mime": "image/png"
+    },
+    {
+      "artifact_type": "SPEC_REFERENCE",
+      "filename": "spec-ct240.pdf",
+      "mime": "application/pdf"
+    }
+  ]
+}

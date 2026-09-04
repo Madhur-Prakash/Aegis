@@ -1,0 +1,39 @@
+# Hot-reload overrides:  docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+services:
+  backend:
+    command: ["/app/entrypoint.sh", "api-reload"]
+    volumes:
+      - ./backend/app:/app/app
+      - ./backend/migrations:/app/migrations
+      - ./backend/evals:/app/evals
+      - ./backend/scripts:/app/scripts
+      - ./backend/tests:/app/tests
+      - ./data:/app/data
+      - evidence:/data/evidence
+
+  worker:
+    volumes:
+      - ./backend/app:/app/app
+      - ./data:/app/data
+      - evidence:/data/evidence
+
+  relay:
+    volumes:
+      - ./backend/app:/app/app
+      - evidence:/data/evidence
+
+  frontend:
+    build:
+      target: deps
+    command: ["npm", "run", "dev"]
+    environment:
+      NODE_ENV: development
+      WATCHPACK_POLLING: "true"
+    volumes:
+      - ./frontend/app:/app/app
+      - ./frontend/components:/app/components
+      - ./frontend/design:/app/design
+      - ./frontend/hooks:/app/hooks
+      - ./frontend/lib:/app/lib
+      - ./frontend/i18n:/app/i18n
+      - ./frontend/public:/app/public
