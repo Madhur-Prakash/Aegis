@@ -34,7 +34,7 @@ import {
   type MicroRow,
 } from "@/components/ui/editorial";
 import { InvertOnHover } from "@/components/ui/InvertOnHover";
-import { BlurLines, FlipHeadline, Lattice, Reveal, SlatBackdrop } from "@/components/ui/Reveal";
+import { BlurLines, FlipHeadline, Lattice, Reveal } from "@/components/ui/Reveal";
 import { ScrambleText } from "@/components/ui/ScrambleText";
 import { Button, Capsule, CountUp } from "@/components/ui/primitives";
 import { chipPop, D, E, pick, stagger, ST } from "@/design/motion";
@@ -56,6 +56,9 @@ export default function LandingPage() {
   // would be scrambling to its own clock, so the glyphs inside the disc would
   // not match the ones under it.
   const ctaPeers = usePeerHover();
+  // The pull quote is its own group: the quote grows and takes full contrast,
+  // its two metadata lines step back.
+  const quotePeers = usePeerHover();
 
   const hero = useRef<HTMLElement>(null);
   // ui/02 §5: the hero stays pinned while the next section slides over it, and
@@ -202,7 +205,6 @@ export default function LandingPage() {
     <Shell>
       {/* ── 01 / 06 ─────────────────────────────────────────────────────── */}
       <section className="hero" ref={hero}>
-        <SlatBackdrop columns={12} />
         <motion.div
           className="hero-backdrop"
           style={reduced ? undefined : { y: backdropY, scale: backdropScale }}
@@ -343,10 +345,16 @@ export default function LandingPage() {
         <ScrollType tone="outline">UNVERIFIABLE</ScrollType>
 
         <Reveal>
-          <blockquote className="pullquote">
-            <span className="nano">{t("section.quoteLabel")}</span>
-            <p>{t("section.quote")}</p>
-            <span className="nano">{t("section.quoteAttr")}</span>
+          <blockquote className="pullquote" {...quotePeers.group}>
+            <span className="nano quote-meta" {...quotePeers.peer("label")}>
+              {t("section.quoteLabel")}
+            </span>
+            <p className="quote-body" {...quotePeers.peer("quote")}>
+              {t("section.quote")}
+            </p>
+            <span className="nano quote-meta" {...quotePeers.peer("attr")}>
+              {t("section.quoteAttr")}
+            </span>
           </blockquote>
         </Reveal>
       </section>

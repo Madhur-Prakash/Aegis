@@ -17,12 +17,9 @@ import {
   flipWord,
   inView,
   pick,
-  slatUp,
-  SLAT_COLUMNS,
   D,
   E,
 } from "@/design/motion";
-import { useState } from "react";
 
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { useIsDuplicate } from "@/hooks/useDuplicate";
@@ -31,6 +28,24 @@ import { usePeerHover } from "@/hooks/usePeerHover";
 type Variant = "dropIn" | "blurUp" | "chipPop";
 
 const VARIANTS = { dropIn, blurUp, chipPop } as const;
+
+/**
+ * `inView` asks for a quarter of the element to be visible before it reveals.
+ * That is right for a row or a cell, and it is a trap for a headline: a
+ * multi-line display block can be taller than a short viewport, and if the
+ * observer's first callback lands before layout has settled the ratio may never
+ * cross the threshold again -- `once: true` then leaves the content hidden for
+ * good. Measured at 215x400 the hero headline came up 0/4 words revealed while
+ * a plain observer on the same element reported a ratio of 0.702.
+ *
+ * Display type therefore reveals on any intersection at all. It is on screen;
+ * that is the whole condition. `inView` itself is untouched because
+ * `design/motion.ts` is copied verbatim from the pack.
+ *
+ * Content that can never appear is the worst failure this page has, so the
+ * looser threshold is the correct trade against revealing a few pixels early.
+ */
+const enterDisplay = { ...inView, amount: "some" } as const;
 
 /** The default entrance for almost everything. */
 export function Reveal({
@@ -125,7 +140,7 @@ export function FlipHeadline({
       style={{ perspective }}
       initial={duplicate ? "show" : "hidden"}
       whileInView={duplicate ? undefined : "show"}
-      viewport={duplicate ? undefined : inView}
+      viewport={duplicate ? undefined : enterDisplay}
       {...(live ? peers.group : {})}
     >
       {lines.map((line, li) => (
@@ -192,7 +207,7 @@ export function BlurLines({
           variants={v}
           initial={duplicate ? "show" : "hidden"}
           whileInView={duplicate ? undefined : "show"}
-          viewport={duplicate ? undefined : inView}
+          viewport={duplicate ? undefined : enterDisplay}
           style={{ display: "block" }}
         >
           {line}
@@ -216,40 +231,6 @@ export function Rule({ className = "" }: { className?: string }) {
       transition={{ duration: D.slow, ease: E.expo as [number, number, number, number] }}
       style={{ transformOrigin: "0% 50%" }}
     />
-  );
-}
-
-/**
- * The column-mask backdrop (ui/02 §4).
- *
- * The slats are *masks*: they rise to reveal what is behind them and then they
- * must go away.  Left mounted they are simply opaque bars sitting on the hero -
- * and because `--ink-800` is `#FFFFFF` in the light theme, that read as a solid
- * white panel with a hard edge where the container ended.  They now unmount
- * when the last column finishes, which is what the docstring always claimed.
- */
-export function SlatBackdrop({ columns }: { columns?: number }) {
-  const reduced = useReducedMotion();
-  const [done, setDone] = useState(false);
-  const count = columns ?? SLAT_COLUMNS;
-
-  if (reduced || done) return null;
-  return (
-    <div className="slat-wrap" aria-hidden style={{ ["--slats" as string]: count }}>
-      {Array.from({ length: count }).map((_, i) => (
-        <motion.span
-          key={i}
-          custom={i}
-          variants={slatUp}
-          initial="hidden"
-          animate="show"
-          className="slat"
-          // The final column owns the unmount, so it fires once rather than
-          // `count` times.
-          onAnimationComplete={i === count - 1 ? () => setDone(true) : undefined}
-        />
-      ))}
-    </div>
   );
 }
 

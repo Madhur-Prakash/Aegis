@@ -22,6 +22,26 @@ const POOL = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789/\\|<>-+·";
 
 const rand = (source: string) => source[Math.floor(Math.random() * source.length)] ?? "·";
 
+/**
+ * Every phrase occupies the same number of slots, so the line cannot reflow
+ * while its glyphs churn -- and the spare slots are split evenly between the
+ * two ends, so the words stay centred.
+ *
+ * `padEnd` alone put all of them on the right: measured, the ink of both
+ * eleven-character phrases sat 89px left of centre in a thirteen-slot line,
+ * which is exactly one slot at display size. The longest phrase looked correct
+ * and the other two did not.
+ */
+const slotted = (text: string, width: number) => {
+  const spare = Math.max(0, width - text.length);
+  const left = Math.floor(spare / 2);
+  return " ".repeat(left) + text + " ".repeat(spare - left);
+};
+
+/** Where `text` starts inside its slots -- the offset `unrest` has to add. */
+const slotOffset = (text: string, width: number) =>
+  Math.floor(Math.max(0, width - text.length) / 2);
+
 type Props = {
   phrases: string[];
   mode?: "cycle" | "unrest";
@@ -45,7 +65,7 @@ export function ScrambleText({
   const [idx, setIdx] = useState(0);
   const target = phrases[idx] ?? phrases[0] ?? "";
   const width = useMemo(() => Math.max(...phrases.map((p) => p.length)), [phrases]);
-  const [chars, setChars] = useState<string[]>(() => target.padEnd(width).split(""));
+  const [chars, setChars] = useState<string[]>(() => slotted(target, width).split(""));
   const raf = useRef<number>(0);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const charsRef = useRef<string[]>(chars);
@@ -60,12 +80,12 @@ export function ScrambleText({
 
   useEffect(() => {
     if (reduced || !active) {
-      setChars(target.padEnd(width).split(""));
+      setChars(slotted(target, width).split(""));
       return;
     }
 
     const from = charsRef.current.slice();
-    const to = target.padEnd(width).split("");
+    const to = slotted(target, width).split("");
 
     /* Each slot gets its own randomised start and end frame -- this is what
        produces the reference's out-of-order dissolve rather than a fade. */
@@ -101,14 +121,17 @@ export function ScrambleText({
         const loop = () => {
           const trimmed = target.trim();
           if (!trimmed.length) return;
-          const at = Math.floor(Math.random() * trimmed.length);
+          // Offset past the leading pad, or the disturbed slot would sometimes
+          // be one of the blanks and nothing would appear to happen.
+          const at =
+            slotOffset(target, width) + Math.floor(Math.random() * trimmed.length);
           setChars((current) => {
             const next = current.slice();
             next[at] = rand(POOL);
             return next;
           });
           timer.current = setTimeout(() => {
-            setChars(target.padEnd(width).split(""));
+            setChars(slotted(target, width).split(""));
             timer.current = setTimeout(loop, 1800 + Math.random() * 1400);
           }, 90);
         };
@@ -130,8 +153,13 @@ export function ScrambleText({
         <span
           key={i}
           aria-hidden
-          className="sc-ch"
-          style={{ opacity: c === target[i] ? 1 : 0.55 }}
+          /* A space gets a narrower slot. At display size a full 0.62em slot is
+             89px of air, which made "SEE THE PROOF" read as three separate
+             words rather than one line. Space slots never churn -- the swap
+             keeps a space a space -- so narrowing them cannot reflow anything
+             mid-transition. */
+          className={c === " " ? "sc-ch sc-ch--space" : "sc-ch"}
+          style={{ opacity: c === slotted(target, width)[i] ? 1 : 0.55 }}
         >
           {c === " " ? " " : c}
         </span>

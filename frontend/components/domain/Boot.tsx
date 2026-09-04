@@ -22,8 +22,14 @@ import { api, type Health } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
 
 const BOOT_KEY = "aegis-booted";
-const MIN_VISIBLE_MS = 1100; // below this it flashes and reads as a glitch
-const MAX_VISIBLE_MS = 4000; // above this, boot anyway and show the banner
+// Long enough to be read as a sequence rather than a flash: the four nodes
+// resolve, the counter climbs, the wipe follows. Below about a second it read
+// as a glitch. The screen is visible for MIN plus the wipe (`D.wipe`, 0.76s),
+// so 2200 lands at just under three seconds; any key, click or scroll still
+// skips it. MAX is the ceiling when health is slow but answering -- it never
+// overrides a halt.
+const MIN_VISIBLE_MS = 2200;
+const MAX_VISIBLE_MS = 3000;
 
 type NodeState = "pending" | "ready" | "degraded" | "failed";
 
@@ -42,6 +48,16 @@ export function Boot({ onDone }: { onDone: () => void }) {
   const [phase, setPhase] = useState<"checking" | "wiping" | "done">("checking");
   const [halted, setHalted] = useState(false);
   const started = useRef(Date.now());
+
+  // The bail timer below is armed once, on mount. A closure over mount-time
+  // state would see `checking` and `!halted` forever -- and it did: measured,
+  // the screen showed the red Postgres halt, then wiped at 4.0s and booted
+  // into the app anyway, setting `aegis-booted`. The one promise this screen
+  // makes is that it will not do that. It reads live state through refs.
+  const phaseRef = useRef(phase);
+  phaseRef.current = phase;
+  const haltedRef = useRef(halted);
+  haltedRef.current = halted;
 
   const finish = useCallback(() => {
     try {
@@ -74,7 +90,9 @@ export function Boot({ onDone }: { onDone: () => void }) {
   useEffect(() => {
     void check();
     const bail = setTimeout(() => {
-      if (phase === "checking" && !halted) setPhase(reduced ? "done" : "wiping");
+      if (phaseRef.current === "checking" && !haltedRef.current) {
+        setPhase(reduced ? "done" : "wiping");
+      }
     }, MAX_VISIBLE_MS);
     return () => clearTimeout(bail);
     // eslint-disable-next-line react-hooks/exhaustive-deps

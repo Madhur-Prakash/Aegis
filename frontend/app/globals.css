@@ -575,20 +575,6 @@
   z-index: 0;
 }
 
-.slat-wrap {
-  position: absolute;
-  inset: 0;
-  display: grid;
-  grid-template-columns: repeat(var(--slats, 24), 1fr);
-  pointer-events: none;
-  z-index: 0;
-}
-
-.slat {
-  background: var(--ink-800);
-  transform-origin: 50% 100%;
-}
-
 .next-section {
   position: relative;
   z-index: 1;
@@ -1559,6 +1545,12 @@
   font-variant-ligatures: none;
 }
 
+/* A word gap, not another glyph. A space in a full slot is 89px of air at
+   display size, which set the phrase as three separate words. */
+.sc-ch--space {
+  width: 0.28em;
+}
+
 .cta {
   position: relative;
   min-height: calc(100svh - 56px);
@@ -1944,6 +1936,22 @@
   font: 500 var(--fs-display-3) / var(--lh-display-3) var(--font-display);
   letter-spacing: var(--tr-display-3);
   color: var(--fg-display);
+}
+
+/* The quote grows from its left edge, against the amber rule that marks it, so
+   the rule stays put and the quote reaches out from it. Its own metadata is the
+   only thing that recedes -- the quote has nothing else in this section to be
+   measured against. */
+.quote-body[data-peer] {
+  --peer-grow: 1.04;
+  --peer-shrink: 1;
+  --peer-recede: 1;
+}
+
+.quote-meta[data-peer] {
+  --peer-grow: 1;
+  --peer-shrink: 1;
+  --peer-recede: 0.4;
 }
 
 /* ── Measured-proof strip ───────────────────────────────────────────────── */
