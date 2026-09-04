@@ -197,17 +197,6 @@ export function MicroGrid({
         const on = peers.on(row.name);
         return (
           <Reveal as="div" key={row.name} index={i} className="microgrid-row">
-            {/* Reference C4: a filled bar *slides* between rows rather than
-                fading in, and the row it lands on inverts. The slide is the
-                whole effect -- without `layoutId` this is an ordinary hover. */}
-            {on ? (
-              <motion.span
-                layoutId={layoutId}
-                className="microgrid-bar"
-                transition={SPRING.layout}
-                aria-hidden
-              />
-            ) : null}
             {/* The pointer bindings sit on this span rather than on the row.
                 The row is Framer-animated, so it carries an inline `transform`
                 and `opacity` for the reveal -- and an inline style beats any
@@ -215,6 +204,24 @@ export function MicroGrid({
                 nothing there.  Same reason the headline words are two
                 elements. */}
             <span className="microgrid-cells" {...peers.peer(row.name)}>
+              {/* Reference C4: a filled bar *slides* between rows rather than
+                  fading in, and the row it lands on inverts. The slide is the
+                  whole effect -- without `layoutId` this is an ordinary hover.
+
+                  It lives *inside* the scaled box, not beside it. As a sibling
+                  on the row it kept the row's original width while the cells
+                  grew, so 18px of text hung off each end -- and the inverted
+                  text is the same near-black as the page, so those letters
+                  simply disappeared. Inside, the bar grows with the type it is
+                  inverting and cannot fall out of register with it. */}
+              {on ? (
+                <motion.span
+                  layoutId={layoutId}
+                  className="microgrid-bar"
+                  transition={SPRING.layout}
+                  aria-hidden
+                />
+              ) : null}
               <span className="micro microgrid-name">{row.name}</span>
               <span className="micro microgrid-kind">{row.kind}</span>
               <span className="nano microgrid-index">({letter(i)}.)</span>
@@ -281,23 +288,36 @@ export function ProofStrip({
  */
 export function ScrollType({
   children,
-  from = -8,
-  to = 8,
+  from = -1,
+  to = 1,
   tone = "muted",
 }: {
   children: string;
-  /** Start offset as a percentage of the line's own width. */
+  /**
+   * Start offset as a percentage of the *frame's* width -- the line is a block,
+   * so a Framer `x` percentage resolves against the frame, not against the
+   * glyphs.
+   *
+   * It was +/-6, which together with the type size meant the word could never
+   * be read whole. The travel and the size are solved together, and every
+   * percent given to travel is a percent the type cannot have: at 1% the
+   * letters reach 14.3vw and fill 96% of the frame, which is within a few
+   * percent of the hard ceiling for a twelve-character word on one line.
+   */
   from?: number;
   to?: number;
   tone?: "solid" | "muted" | "outline";
 }) {
   const reduced = useReducedMotion();
+  // Per-letter, so the one under the pointer can grow on its own.
+  const peers = usePeerHover();
   const ref = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({
     target: ref,
     offset: ["start end", "end start"],
   });
   const x = useTransform(scrollYProgress, [0, 1], [`${from}%`, `${to}%`]);
+  const letters = [...children];
 
   return (
     <div className="scrolltype" ref={ref} aria-label={children}>
@@ -305,8 +325,20 @@ export function ScrollType({
         className={`scrolltype-line scrolltype-line--${tone}`}
         style={reduced ? undefined : { x }}
         aria-hidden
+        {...peers.group}
       >
-        {children}
+        {letters.map((letter, index) => (
+          /* Each letter is its own inline-block so it can scale without
+             reflowing its neighbours: a transform does not affect layout, so
+             the word stays put and the letter grows over it. */
+          <span
+            key={index}
+            className="scrolltype-char"
+            {...peers.peer(String(index))}
+          >
+            {letter}
+          </span>
+        ))}
       </motion.span>
     </div>
   );

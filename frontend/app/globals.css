@@ -145,6 +145,17 @@
   flex: 1 1 auto;
 }
 
+/* Poster tracking.
+   `design/tokens.css` is copied verbatim and its tightest display tracking is
+   `--tr-display-1` at -0.03em, set for the 144px headline scale. This line is
+   ~206px, and optical sizing wants tracking to tighten as size grows -- so the
+   one place on the page that is half again as large as the largest headline
+   gets its own step. It is also what buys the word its size: at -0.045em the
+   twelve letters are 6.72em rather than 6.9em wide. */
+:root {
+  --tr-poster: -0.045em;
+}
+
 /* ── Peer hover: one gesture, everywhere ────────────────────────── */
 /* The item under the pointer grows and takes full contrast; its peers shrink a
    hair and recede.  Headline words, grid rows, metric cells, footer links and
@@ -1765,11 +1776,15 @@
   transform-origin: 50% 50%;
 }
 
-/* Reference C4: the hovered row inverts against a filled bar. */
+/* Reference C4: the hovered row inverts against a filled bar.
+   `z-index: -1` because the bar is now a child of the scaled cells rather than
+   a sibling of them: a negative index paints it after the parent's background
+   but before the parent's content, which puts it behind the text without
+   needing a third element. */
 .microgrid-bar {
   position: absolute;
   inset: 0;
-  z-index: 0;
+  z-index: -1;
   background: var(--bone-100);
   border-radius: var(--r-sm);
 }
@@ -1831,20 +1846,54 @@
 }
 
 /* ── Scroll-linked display type ─────────────────────────────────────────── */
-/* Deliberately wider than the viewport and clipped by it. The parent hides the
-   overflow so the page itself never scrolls sideways. */
+/* The word runs the full width of the frame, gutter to gutter, and is meant to
+   be read whole.
+   `overflow-x: clip` rather than `overflow: hidden`: the horizontal guard is
+   the point -- the page must never scroll sideways -- but clipping the vertical
+   axis too would cut the top off a letter as it grows under the pointer. */
 .scrolltype {
-  overflow: hidden;
+  overflow-x: clip;
   padding-block: var(--sp-6);
   margin-inline: calc(var(--gutter) * -1);
 }
 
+/* As large as the word can be and still be read whole.
+   The arithmetic is the design here. At weight 900 this face runs 0.605em per
+   character; with `--tr-poster` that is 0.56em, so the twelve letters are
+   6.72em wide. One line of twelve characters therefore caps the type at about
+   14.5vw no matter what -- at the original 18vw the word was 1.242x the frame
+   and two letters were always off the edge.
+
+   14.3vw with 1% of travel puts the text at 96% of the frame and leaves ~14px
+   clear on each side at the extremes of the scroll, at every breakpoint. The
+   cap exists so the type stops growing past the point where the frame stops
+   growing with it.
+
+   Centred, and that is not cosmetic: left-aligned, all the slack sat on the
+   right, so the leading `U` was still clipped by 21px at the start of the
+   travel. Centring splits the slack between both edges. */
 .scrolltype-line {
   display: block;
+  text-align: center;
   white-space: nowrap;
-  font: 900 clamp(4rem, 18vw, 15rem) / 0.86 var(--font-display);
-  letter-spacing: var(--tr-display-1);
+  font: 900 clamp(2.2rem, 14.3vw, 12.9rem) / 0.86 var(--font-display);
+  letter-spacing: var(--tr-poster);
   will-change: transform;
+}
+
+/* One letter at a time. It grows about its own middle so it expands into the
+   frame's vertical padding rather than pushing past the top of it, and the
+   neighbours do not recede -- dimming eleven letters to lift one turns a
+   wordmark into a puzzle. */
+.scrolltype-char {
+  display: inline-block;
+}
+
+.scrolltype-char[data-peer] {
+  --peer-grow: 1.14;
+  --peer-shrink: 1;
+  --peer-recede: 1;
+  transform-origin: 50% 50%;
 }
 
 .scrolltype-line--solid {

@@ -336,10 +336,11 @@ export default function LandingPage() {
           lede={t("section.verifierLede")}
         />
 
-        {/* Oversized, clipped, and moving with the scroll rather than on a loop. */}
-        <ScrollType from={-6} to={6} tone="outline">
-          UNVERIFIABLE
-        </ScrollType>
+        {/* Full width of the frame, moving with the scroll rather than on a
+            loop, and readable whole at every scroll position. The travel and
+            the type size are solved together in `ScrollType`, so the size is
+            not overridden here. */}
+        <ScrollType tone="outline">UNVERIFIABLE</ScrollType>
 
         <Reveal>
           <blockquote className="pullquote">
