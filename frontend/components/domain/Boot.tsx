@@ -10,7 +10,10 @@
  * degraded, and turns red and halts on Postgres -- rather than booting into a
  * broken app and lying about it.
  *
- * Shown once per session.  Nobody should watch this twice, least of all a judge.
+ * Shown on every load. The line reaches the four stations one at a time, and
+ * it is presentation of results, not the results: a station the line reaches
+ * before health has answered shows as pending and takes its true state the
+ * instant health lands, and a halt freezes the line where it is.
  */
 
 import { AnimatePresence, motion } from "motion/react";
@@ -30,6 +33,9 @@ const BOOT_KEY = "aegis-booted";
 // overrides a halt.
 const MIN_VISIBLE_MS = 2200;
 const MAX_VISIBLE_MS = 3000;
+// One station per STEP_MS, the first after one interval: four steps land at
+// ~1.7s, which leaves the last station lit for half a second before the wipe.
+const STEP_MS = 420;
 
 type NodeState = "pending" | "ready" | "degraded" | "failed";
 
@@ -47,6 +53,8 @@ export function Boot({ onDone }: { onDone: () => void }) {
   const [counter, setCounter] = useState(0);
   const [phase, setPhase] = useState<"checking" | "wiping" | "done">("checking");
   const [halted, setHalted] = useState(false);
+  // How many stations the line has reached, 0..NODES.length.
+  const [reached, setReached] = useState(0);
   const started = useRef(Date.now());
 
   // The bail timer below is armed once, on mount. A closure over mount-time
@@ -59,12 +67,10 @@ export function Boot({ onDone }: { onDone: () => void }) {
   const haltedRef = useRef(halted);
   haltedRef.current = halted;
 
+  // Nothing is written to sessionStorage here any more: the sequence runs on
+  // every load. `BOOT_KEY` is still honoured by `bootSuppressed` for anyone who
+  // sets it deliberately -- an operator who wants to bypass it, or a test.
   const finish = useCallback(() => {
-    try {
-      window.sessionStorage.setItem(BOOT_KEY, "1");
-    } catch {
-      // ignore
-    }
     setPhase("done");
     onDone();
   }, [onDone]);
@@ -98,15 +104,36 @@ export function Boot({ onDone }: { onDone: () => void }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // The counter climbs to 100 as the last node resolves (reference D).
+  // The line advances one station per STEP_MS. A halt freezes it; reduced
+  // motion shows every station at once and lets the existing fades carry it.
   useEffect(() => {
     if (halted) return;
-    const target = health ? 100 : 72;
+    if (reduced) {
+      setReached(NODES.length);
+      return;
+    }
+    const id = setInterval(() => {
+      setReached((current) => {
+        if (current >= NODES.length) {
+          clearInterval(id);
+          return current;
+        }
+        return current + 1;
+      });
+    }, STEP_MS);
+    return () => clearInterval(id);
+  }, [halted, reduced]);
+
+  // The counter tracks the stations -- 25 each -- rather than the old 72 that
+  // parked until health answered and then leapt to 100 (reference D).
+  useEffect(() => {
+    if (halted) return;
+    const target = Math.round((reached / NODES.length) * 100);
     const id = setInterval(() => {
       setCounter((current) => (current >= target ? target : current + 2));
     }, 24);
     return () => clearInterval(id);
-  }, [health, halted]);
+  }, [reached, halted]);
 
   // Any key, click or scroll during boot jumps straight to the wipe.
   useEffect(() => {
@@ -134,7 +161,6 @@ export function Boot({ onDone }: { onDone: () => void }) {
     return check.required ? "failed" : "degraded";
   };
 
-  const readyCount = health ? NODES.filter((n) => nodeState(n.key) === "ready").length : 0;
   const degraded = health
     ? NODES.filter((n) => nodeState(n.key) === "degraded").map((n) => n.key)
     : [];
@@ -146,6 +172,14 @@ export function Boot({ onDone }: { onDone: () => void }) {
       : degraded.includes("kafka")
         ? t("boot.degradedKafka")
         : "";
+
+  // The fill runs centre-to-centre between the first and last station, so a
+  // line that has reached station k is k/3 of the rail, not k/4 of the track.
+  const fill = Math.max(0, reached - 1) / (NODES.length - 1);
+  const travelling = reached > 0 && reached < NODES.length;
+  const segment = reduced
+    ? { duration: D.fast }
+    : { duration: D.slow, ease: E.expo as [number, number, number, number] };
 
   if (phase === "done") return null;
 
@@ -178,7 +212,10 @@ export function Boot({ onDone }: { onDone: () => void }) {
         <span className="boot-corner boot-corner--tr nano num">
           {String(Math.min(100, counter)).padStart(3, "0")}
         </span>
-        <span className="boot-corner boot-corner--bl nano">{t("boot.label")}</span>
+        <span className="boot-corner boot-corner--bl nano num">
+          {t("boot.label")} · {String(reached).padStart(2, "0")} /{" "}
+          {String(NODES.length).padStart(2, "0")}
+        </span>
 
         <div className="boot-inner">
           <motion.svg
@@ -200,28 +237,42 @@ export function Boot({ onDone }: { onDone: () => void }) {
           </motion.svg>
 
           <div className="boot-track" role="status" aria-live="polite">
-            <motion.span
-              className="boot-fill"
-              initial={{ scaleX: 0 }}
-              animate={{ scaleX: readyCount / NODES.length }}
-              transition={{ duration: D.base, ease: "linear" }}
-              style={{ width: "100%" }}
-              aria-hidden
-            />
-            {NODES.map((node, index) => (
+            <span className="boot-rail" aria-hidden>
+              {/* Each segment shoots and settles; the head rides the leading
+                  edge and steps aside once the last station is lit. */}
               <motion.span
-                key={node.key}
-                className="boot-node"
-                data-state={nodeState(node.key)}
-                custom={index}
-                variants={chipPop}
-                initial="hidden"
-                animate={nodeState(node.key) === "pending" ? "hidden" : "show"}
-              >
-                {node.glyph}
-                <span className="boot-node-label nano">{t(node.label)}</span>
-              </motion.span>
-            ))}
+                className="boot-fill"
+                initial={{ scaleX: 0 }}
+                animate={{ scaleX: fill }}
+                transition={segment}
+              />
+              <motion.span
+                className="boot-head"
+                initial={{ left: "0%", opacity: 0 }}
+                animate={{ left: `${fill * 100}%`, opacity: travelling ? 1 : 0 }}
+                transition={segment}
+              />
+            </span>
+            {NODES.map((node, index) => {
+              const isReached = reached > index;
+              return (
+                <motion.span
+                  key={node.key}
+                  className="boot-node"
+                  data-state={isReached ? nodeState(node.key) : "pending"}
+                  data-reached={isReached}
+                  // No per-index stagger: each station pops the moment the
+                  // line reaches it, and the line already carries the rhythm.
+                  custom={0}
+                  variants={chipPop}
+                  initial="hidden"
+                  animate={isReached ? "show" : "hidden"}
+                >
+                  {node.glyph}
+                  <span className="boot-node-label nano">{t(node.label)}</span>
+                </motion.span>
+              );
+            })}
           </div>
 
           <p className="boot-note micro" style={{ color: halted ? "var(--sig-fail)" : undefined }}>
@@ -246,7 +297,12 @@ export function Boot({ onDone }: { onDone: () => void }) {
   );
 }
 
-export function hasBooted() {
+/**
+ * True when this tab has asked to bypass the boot. The app never sets the key
+ * itself -- the sequence runs on every load -- so this is only ever an explicit
+ * choice: a demo operator in devtools, or a test harness.
+ */
+export function bootSuppressed() {
   try {
     return window.sessionStorage.getItem(BOOT_KEY) === "1";
   } catch {

@@ -105,28 +105,34 @@ export default function ReviewQueuePage() {
       <h1 className="display-3">{t("review.queue")}</h1>
 
       <div className="two-col" style={{ paddingTop: "var(--sp-5)" }}>
-        <Panel title={t("review.queue")}>
-          {state.status === "loading" ? <Loading /> : null}
-          {state.status === "error" ? (
-            <ErrorBlock code={state.error.code} message={state.error.message} onRetry={reload} />
-          ) : null}
-          {state.status === "ready" ? (
+        {/* Loading, an error, or an empty queue: there is one thing to show and
+            no detail pane to sit beside it, so it takes the whole width and the
+            middle of the screen instead of the first 380px column. */}
+        {state.status !== "ready" || items.length === 0 ? (
+          <div className="state-stage">
+            {state.status === "loading" ? <Loading /> : null}
+            {state.status === "error" ? (
+              <ErrorBlock code={state.error.code} message={state.error.message} onRetry={reload} />
+            ) : null}
+            {state.status === "ready" ? (
+              <div className="stack" style={{ gap: "var(--sp-3)", alignItems: "center" }}>
+                <div className="micro">
+                  <ScrambleText phrases={list("review.emptyPhrases")} />
+                </div>
+                <Empty label={t("review.queue")} body={t("review.empty")} />
+              </div>
+            ) : null}
+          </div>
+        ) : (
+          <Panel title={t("review.queue")}>
             <MagicList
               items={items}
               selectedId={selectedId}
               onSelect={setSelectedId}
               cursorLabel={t("review.selected")}
-              emptyLabel={
-                <div className="stack" style={{ gap: "var(--sp-3)" }}>
-                  <div className="micro">
-                    <ScrambleText phrases={list("review.emptyPhrases")} />
-                  </div>
-                  <Empty label={t("review.queue")} body={t("review.empty")} />
-                </div>
-              }
             />
-          ) : null}
-        </Panel>
+          </Panel>
+        )}
 
         {selected ? (
           <div className="stack">

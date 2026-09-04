@@ -22,7 +22,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { motion, useScroll, useTransform } from "motion/react";
 
-import { Boot, hasBooted } from "@/components/domain/Boot";
+import { Boot, bootSuppressed } from "@/components/domain/Boot";
 import { useSession } from "@/components/domain/AppProviders";
 import { Shell } from "@/components/domain/Shell";
 import {
@@ -45,11 +45,40 @@ import { dateOnly, inr, num, pct } from "@/lib/format";
 import { usePeerHover } from "@/hooks/usePeerHover";
 import { useI18n } from "@/lib/i18n";
 
+/**
+ * The first-load choreography (ui/02 section 4), in seconds from hero mount.
+ *
+ * It used to start everything at once -- headline, lede and buttons all at
+ * t=0 -- and read as a flash. Each piece now waits for its cue, so the page
+ * unfolds: headline, then lede, then the actions, then the rule draws and the
+ * figures count. A cue is a gate on `animate` rather than a bigger stagger
+ * index because `stagger()` in the verbatim motion.ts caps at 0.4s.
+ *
+ * Measured with the first set (0.55 / 1.0 / 1.25 / 1.45) the whole sequence
+ * ran in 1.36s and still read as brisk; these put the last figure at ~2.2s.
+ */
+const CUE = { lede: 0.7, actions: 1.25, rule: 1.55, stats: 1.8 } as const;
+
+/** True once `seconds` have passed since `active` became true. */
+function useCue(seconds: number, active: boolean, reduced: boolean) {
+  const [on, setOn] = useState(false);
+  useEffect(() => {
+    if (!active) return;
+    const id = setTimeout(() => setOn(true), reduced ? 0 : seconds * 1000);
+    return () => clearTimeout(id);
+  }, [seconds, active, reduced]);
+  return on;
+}
+
 export default function LandingPage() {
   const { t, list, locale } = useI18n();
   const { status } = useSession();
   const reduced = useReducedMotion();
   const [booting, setBooting] = useState<boolean | null>(null);
+  // The hero is live only once the boot has finished; cues count from there,
+  // not from page mount, or they would all have elapsed behind the boot screen.
+  const heroLive = booting === false;
+  const actionsCued = useCue(CUE.actions, heroLive, reduced);
   // The closing section is its own peer group: the scrambling line and the two
   // lines of metadata around it.  The line cannot carry the inverting disc --
   // `InvertOnHover` renders its children twice, and a second `ScrambleText`
@@ -83,7 +112,7 @@ export default function LandingPage() {
   const backdropScale = useTransform(scrollYProgress, [0, 1], [1, 1.08]);
 
   useEffect(() => {
-    setBooting(!hasBooted());
+    setBooting(!bootSuppressed());
   }, []);
 
   const evals = useAsync(() => api.evalSummary(), []);
@@ -228,12 +257,14 @@ export default function LandingPage() {
           >
             {/* The pointer carries a disc that inverts the type it crosses. */}
             <InvertOnHover>
-              <FlipHeadline lines={heroLines} interactive />
+              <FlipHeadline lines={heroLines} interactive pace={2.4} />
             </InvertOnHover>
           </motion.div>
 
           <motion.div style={reduced ? undefined : { y: ledeY, opacity: ledeOpacity }}>
-            <BlurLines>{t("hero.sub")}</BlurLines>
+            <BlurLines cue={CUE.lede} pace={2.2}>
+              {t("hero.sub")}
+            </BlurLines>
           </motion.div>
 
           <div className="row hero-cta">
@@ -250,7 +281,7 @@ export default function LandingPage() {
                 custom={index}
                 variants={pick(chipPop, reduced)}
                 initial="hidden"
-                animate="show"
+                animate={actionsCued ? "show" : "hidden"}
               >
                 <Link href={cta.href} data-cursor="">
                   <Button variant={cta.primary ? "primary" : "ghost"} cursorLabel={cta.label}>
@@ -264,7 +295,7 @@ export default function LandingPage() {
                 custom={2}
                 variants={pick(chipPop, reduced)}
                 initial="hidden"
-                animate="show"
+                animate={actionsCued ? "show" : "hidden"}
               >
                 <Capsule dotTone="pass">{t("hero.evalGreen")}</Capsule>
               </motion.span>
@@ -283,7 +314,7 @@ export default function LandingPage() {
                 : {
                     duration: D.slow,
                     ease: E.expo as [number, number, number, number],
-                    delay: reduced ? 0 : 0.9,
+                    delay: reduced ? 0 : CUE.rule,
                   }
             }
             style={{ transformOrigin: "0% 50%" }}
@@ -298,7 +329,7 @@ export default function LandingPage() {
                 transition={{
                   duration: reduced ? D.fast : D.base,
                   ease: E.enter as [number, number, number, number],
-                  delay: reduced ? 0 : 1 + stagger(index, ST.base),
+                  delay: reduced ? 0 : CUE.stats + stagger(index, ST.base),
                 }}
               >
                 <dt className="stat-k micro">{stat.label}</dt>

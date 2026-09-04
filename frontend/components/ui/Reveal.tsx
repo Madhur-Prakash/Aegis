@@ -9,6 +9,7 @@
 
 import { motion } from "motion/react";
 import type { ReactNode } from "react";
+import { useEffect, useState } from "react";
 
 import {
   blurUp,
@@ -94,6 +95,7 @@ export function FlipHeadline({
   trailing,
   interactive = false,
   as = "h1",
+  pace = 1,
 }: {
   lines: { text: string; tone: "solid" | "muted" }[][];
   className?: string;
@@ -111,6 +113,13 @@ export function FlipHeadline({
    */
   interactive?: boolean;
   as?: "h1" | "h2";
+  /**
+   * Spreads the per-word stagger: the index handed to `flipWord` is multiplied
+   * by this. The variants live in the verbatim `motion.ts`, so the step itself
+   * cannot change, and `stagger()` caps at 0.4s -- a pace of 2.4 puts four
+   * words at 0 / 0.13 / 0.26 / 0.40 instead of 0 / .055 / .11 / .165.
+   */
+  pace?: number;
 }) {
   const reduced = useReducedMotion();
   const duplicate = useIsDuplicate();
@@ -161,7 +170,7 @@ export function FlipHeadline({
                 {...(live ? peers.peer(String(index)) : {})}
               >
                 <motion.span
-                  custom={index}
+                  custom={index * pace}
                   variants={v}
                   style={{
                     display: "inline-block",
@@ -190,24 +199,43 @@ export function FlipHeadline({
 export function BlurLines({
   children,
   className = "lede",
+  pace = 1,
+  cue,
 }: {
   children: string;
   className?: string;
+  /** Spreads the per-line stagger; see `FlipHeadline`. */
+  pace?: number;
+  /**
+   * Seconds after mount before the lines start. A cue replaces the viewport
+   * trigger: the hero lede is on screen the moment the page is, and what it
+   * needs is not "when visible" but "after the headline". Scroll sections do
+   * not pass one and keep `whileInView`.
+   */
+  cue?: number;
 }) {
   const reduced = useReducedMotion();
   const duplicate = useIsDuplicate();
   const v = pick(blurUp, reduced);
   const lines = children.split(" / ");
+  const gated = cue !== undefined;
+  const [cued, setCued] = useState(!gated);
+  useEffect(() => {
+    if (!gated) return;
+    const id = setTimeout(() => setCued(true), reduced ? 0 : cue * 1000);
+    return () => clearTimeout(id);
+  }, [gated, cue, reduced]);
   return (
     <p className={className}>
       {lines.map((line, i) => (
         <motion.span
           key={i}
-          custom={i}
+          custom={i * pace}
           variants={v}
           initial={duplicate ? "show" : "hidden"}
-          whileInView={duplicate ? undefined : "show"}
-          viewport={duplicate ? undefined : enterDisplay}
+          animate={gated ? (cued || duplicate ? "show" : "hidden") : undefined}
+          whileInView={gated || duplicate ? undefined : "show"}
+          viewport={gated || duplicate ? undefined : enterDisplay}
           style={{ display: "block" }}
         >
           {line}

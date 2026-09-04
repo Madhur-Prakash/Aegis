@@ -452,12 +452,82 @@
   background: var(--line-1);
 }
 
+/* The rail runs centre-to-centre between the first and last station (each is
+   28px), so a fill of k/3 ends exactly on station k instead of 14px short of
+   it. The fill and the head both live in this box. */
+.boot-rail {
+  position: absolute;
+  top: 50%;
+  left: 14px;
+  right: 14px;
+  height: 0;
+}
+
 .boot-fill {
   position: absolute;
-  inset: 50% auto auto 0;
+  top: 0;
+  left: 0;
+  width: 100%;
   height: 1px;
   background: var(--sig-pass);
   transform-origin: 0% 50%;
+}
+
+/* The head: a dot at the leading edge of the line, breathing while it moves.
+   Its `left` is animated by Framer as a percentage of the rail. */
+.boot-head {
+  position: absolute;
+  top: 0;
+  width: 6px;
+  height: 6px;
+  margin: -3px 0 0 -3px;
+  border-radius: var(--r-full);
+  background: var(--sig-pass);
+  animation: boot-breathe var(--d-slow) ease-in-out infinite alternate;
+}
+
+@keyframes boot-breathe {
+  from {
+    box-shadow: 0 0 0 3px var(--sig-pass-tint);
+  }
+  to {
+    box-shadow: 0 0 0 9px var(--sig-pass-tint);
+  }
+}
+
+/* A station rings once as the line reaches it, in whatever colour its state
+   gave it -- green, amber or red -- so the ring never claims a state the
+   check did not report. */
+.boot-node[data-reached="true"] {
+  background: var(--ink-700);
+}
+
+.boot-node[data-reached="true"]::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  border: 1px solid currentColor;
+  pointer-events: none;
+  animation: boot-ring var(--d-slow) ease-out 1 both;
+}
+
+@keyframes boot-ring {
+  from {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  to {
+    transform: scale(2.2);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .boot-head,
+  .boot-node[data-reached="true"]::after {
+    animation: none;
+  }
 }
 
 .boot-node {
@@ -1667,6 +1737,20 @@
   .two-col {
     grid-template-columns: 1fr;
   }
+}
+
+/* One state -- loading, error, empty -- and nothing beside it. It spans the
+   layout and sits in the middle of the screen rather than in the first column
+   of a grid whose other column has nothing in it. */
+.state-stage {
+  grid-column: 1 / -1;
+  display: grid;
+  place-items: center;
+  min-height: 48svh;
+}
+
+.state-stage > * {
+  width: min(100%, 440px);
 }
 
 .cockpit {
