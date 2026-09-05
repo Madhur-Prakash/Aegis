@@ -54,6 +54,8 @@ moves the money, and every decision is signed, hash-chained and anchored.
 
 </div>
 
+https://github.com/user-attachments/assets/6409f6ff-a9b3-46e3-b418-89b3439dae1a
+
 > [!IMPORTANT]
 > Every number in this document was produced by `make eval` on **2026-09-04T15:00:46+00:00** and is
 > reproduced in [`backend/evals/out/RESULTS.md`](backend/evals/out/RESULTS.md). **Nothing here is
