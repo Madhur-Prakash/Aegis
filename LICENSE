@@ -19,3 +19,19 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+---
+
+THIRD-PARTY ASSETS
+
+The MIT grant above covers the source of this project. Two typefaces are
+redistributed with it under their own terms, which are unaffected by it:
+
+  Satoshi — Indian Type Foundry, ITF Free Font Licence.
+    frontend/public/fonts/satoshi-{300,500,700,900}.woff2
+
+  JetBrains Mono — JetBrains s.r.o., SIL Open Font Licence 1.1.
+    frontend/public/fonts/jetbrainsmono-{400,500,700}-{latin,latinext}.woff2
+
+Provenance and refetch commands for both are in
+frontend/public/fonts/README.md.

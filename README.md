@@ -23,6 +23,7 @@ moves the money, and every decision is signed, hash-chained and anchored.
 <img alt="Suite B" src="https://img.shields.io/badge/suite_B_settlement-PASS_9%2F9-4FD1A5">
 <img alt="Suite C" src="https://img.shields.io/badge/suite_C_provenance-PASS_5%2F5-4FD1A5">
 <img alt="Labelled bundles" src="https://img.shields.io/badge/labelled_bundles-150-C6C0B4">
+<a href="LICENSE"><img alt="Licence" src="https://img.shields.io/badge/licence-MIT-4FD1A5"></a>
 <img alt="Payment rail" src="https://img.shields.io/badge/payment_rail-SIMULATED-FFC24B?logo=razorpay&logoColor=white">
 </p>
 
@@ -458,6 +459,29 @@ every number comes from.
 
 ---
 
+## Licence
+
+[MIT](LICENSE). Use it, fork it, ship it.
+
+Two typefaces are redistributed with the source and are **not** covered by that
+grant — they keep their own terms, which permit this redistribution:
+
+| asset | licence | where |
+|:--|:--|:--|
+| **Satoshi** 300/500/700/900 | ITF Free Font Licence (Indian Type Foundry) | [`frontend/public/fonts/`](frontend/public/fonts/README.md) |
+| **JetBrains Mono** 400/500/700 | SIL Open Font Licence 1.1 | [`frontend/public/fonts/`](frontend/public/fonts/README.md) |
+
+Why they are vendored rather than fetched, and why they are declared as plain
+`@font-face` rather than through `next/font/local`, is
+[ADR-011](docs/DECISIONS.md).
+
+> [!NOTE]
+> A licence is not a permission to operate. **Aegis is escrow software; it is not
+> an escrow licence** — running escrow for real money is a regulated activity.
+> See [Limitations §8](docs/LIMITATIONS.md#8-what-would-need-to-be-true-before-this-touched-real-money).
+
+---
+
 <div align="center">
 
 <sub><b>Aegis</b> · programmable escrow for agentic commerce</sub>
@@ -472,7 +496,8 @@ every number comes from.
 <a href="docs/DEMO.md">Demo</a> ·
 <a href="docs/UI_MOTION.md">UI &amp; Motion</a> ·
 <a href="docs/DECISIONS.md">Decisions</a> ·
-<a href="docs/LIMITATIONS.md">Limitations</a>
+<a href="docs/LIMITATIONS.md">Limitations</a> ·
+<a href="LICENSE">Licence</a>
 </sub>
 
 </div>
