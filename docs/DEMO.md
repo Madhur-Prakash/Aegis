@@ -8,6 +8,10 @@ Every number below is from the recorded `make demo` run and is reproduced in
 [`backend/evals/out/demo.json`](../backend/evals/out/demo.json).
 
 <p>
+<a href="https://youtu.be/bZ8gbAr_bkM"><img alt="Demo video" src="https://img.shields.io/badge/watch_the_walkthrough-5_MINUTES-FF0000?style=for-the-badge&labelColor=0D0D10&logo=youtube&logoColor=FF0000"></a>
+</p>
+
+<p>
 <img alt="Runtime" src="https://img.shields.io/badge/runtime-6_MINUTES-4FD1A5?style=for-the-badge&labelColor=0D0D10">
 <img alt="Escrow" src="https://img.shields.io/badge/escrow-INR_420,000.00-C6C0B4?style=for-the-badge&labelColor=0D0D10">
 <img alt="Ledger" src="https://img.shields.io/badge/ledger-37_EVENTS_%C2%B7_VERIFY_OK-4FD1A5?style=for-the-badge&labelColor=0D0D10">

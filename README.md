@@ -23,6 +23,7 @@ moves the money, and every decision is signed, hash-chained and anchored.
 <img alt="Suite B" src="https://img.shields.io/badge/suite_B_settlement-PASS_9%2F9-4FD1A5">
 <img alt="Suite C" src="https://img.shields.io/badge/suite_C_provenance-PASS_5%2F5-4FD1A5">
 <img alt="Labelled bundles" src="https://img.shields.io/badge/labelled_bundles-150-C6C0B4">
+<a href="https://youtu.be/bZ8gbAr_bkM"><img alt="Demo video" src="https://img.shields.io/badge/demo_video-5_minutes-FF0000?logo=youtube&logoColor=white"></a>
 <a href="LICENSE"><img alt="Licence" src="https://img.shields.io/badge/licence-MIT-4FD1A5"></a>
 <img alt="Payment rail" src="https://img.shields.io/badge/payment_rail-SIMULATED-FFC24B?logo=razorpay&logoColor=white">
 </p>
@@ -375,6 +376,11 @@ httpOnly cookies.
 
 ## The demo
 
+> [!TIP]
+> **[Watch the five-minute walkthrough &rarr;](https://youtu.be/bZ8gbAr_bkM)** — the whole platform, recorded against a live
+> stack. The deal in it is rewound and re-driven on camera, so every payout, verdict and hash on
+> screen was produced during that take.
+
 `make demo` drives the seeded deal — Meridian Apparel (Bengaluru) buying 2,500 cotton twill shirts
 from Tirupur Knitworks — through three milestones and every branch that matters. Measured output of
 the recorded run:
@@ -497,6 +503,7 @@ Why they are vendored rather than fetched, and why they are declared as plain
 <a href="docs/UI_MOTION.md">UI &amp; Motion</a> ·
 <a href="docs/DECISIONS.md">Decisions</a> ·
 <a href="docs/LIMITATIONS.md">Limitations</a> ·
+<a href="https://youtu.be/bZ8gbAr_bkM">Demo video</a> ·
 <a href="LICENSE">Licence</a>
 </sub>
 
