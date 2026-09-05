@@ -10,30 +10,32 @@ Milestone escrow for deals between strangers. An AI verifies the evidence, a det
 moves the money, and every decision is signed, hash-chained and anchored.
 
 <p>
-<a href="https://github.com/Madhur-Prakash/Aegis/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/Madhur-Prakash/Aegis/ci.yml?branch=main&style=for-the-badge&label=CI&labelColor=0D0D10&color=4FD1A5&logo=githubactions&logoColor=4FD1A5"></a>
-<img alt="False releases" src="https://img.shields.io/badge/false_releases-0-4FD1A5?style=for-the-badge&labelColor=0D0D10">
-<img alt="Decision accuracy" src="https://img.shields.io/badge/decision_accuracy-1.00-4FD1A5?style=for-the-badge&labelColor=0D0D10">
-<img alt="Invariants" src="https://img.shields.io/badge/invariants-13_PROVEN-4FD1A5?style=for-the-badge&labelColor=0D0D10">
+<a href="https://github.com/Madhur-Prakash/Aegis/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/Madhur-Prakash/Aegis/ci.yml?branch=main&label=CI&logo=githubactions&logoColor=white&color=4FD1A5"></a>
+<img alt="False releases" src="https://img.shields.io/badge/false_releases-0-4FD1A5?logo=shieldsdotio&logoColor=white">
+<img alt="Decision accuracy" src="https://img.shields.io/badge/decision_accuracy-1.00-4FD1A5">
+<img alt="Invariants" src="https://img.shields.io/badge/invariants-13_proven-4FD1A5">
+<img alt="Escalation rate" src="https://img.shields.io/badge/escalation_rate-0.24_in_band-FFC24B">
 </p>
 
 <p>
-<img alt="Backend tests" src="https://img.shields.io/badge/pytest-347_tests-4FD1A5?style=flat-square&labelColor=0D0D10&logo=pytest&logoColor=4FD1A5">
-<img alt="Contract tests" src="https://img.shields.io/badge/forge-28_passed-4FD1A5?style=flat-square&labelColor=0D0D10&logo=solidity&logoColor=4FD1A5">
-<img alt="Suite B" src="https://img.shields.io/badge/suite_B_settlement-PASS_9%2F9-4FD1A5?style=flat-square&labelColor=0D0D10">
-<img alt="Suite C" src="https://img.shields.io/badge/suite_C_provenance-PASS_5%2F5-4FD1A5?style=flat-square&labelColor=0D0D10">
-<img alt="Escalation rate" src="https://img.shields.io/badge/escalation_rate-0.24_IN_BAND-FFC24B?style=flat-square&labelColor=0D0D10">
+<img alt="Backend tests" src="https://img.shields.io/badge/pytest-347_tests-4FD1A5?logo=pytest&logoColor=white">
+<img alt="Contract tests" src="https://img.shields.io/badge/forge-28_passed-4FD1A5?logo=solidity&logoColor=white">
+<img alt="Suite B" src="https://img.shields.io/badge/suite_B_settlement-PASS_9%2F9-4FD1A5">
+<img alt="Suite C" src="https://img.shields.io/badge/suite_C_provenance-PASS_5%2F5-4FD1A5">
+<img alt="Labelled bundles" src="https://img.shields.io/badge/labelled_bundles-150-C6C0B4">
+<img alt="Payment rail" src="https://img.shields.io/badge/payment_rail-SIMULATED-FFC24B?logo=razorpay&logoColor=white">
 </p>
 
 <p>
-<img alt="Python" src="https://img.shields.io/badge/Python_3.12-C6C0B4?style=flat-square&labelColor=0D0D10&logo=python&logoColor=4FD1A5">
-<img alt="FastAPI" src="https://img.shields.io/badge/FastAPI-C6C0B4?style=flat-square&labelColor=0D0D10&logo=fastapi&logoColor=4FD1A5">
-<img alt="Postgres" src="https://img.shields.io/badge/Postgres_16-C6C0B4?style=flat-square&labelColor=0D0D10&logo=postgresql&logoColor=4FD1A5">
-<img alt="Kafka" src="https://img.shields.io/badge/Kafka_KRaft-C6C0B4?style=flat-square&labelColor=0D0D10&logo=apachekafka&logoColor=4FD1A5">
-<img alt="Redis" src="https://img.shields.io/badge/Redis_7-C6C0B4?style=flat-square&labelColor=0D0D10&logo=redis&logoColor=4FD1A5">
-<img alt="Next.js" src="https://img.shields.io/badge/Next.js_15-C6C0B4?style=flat-square&labelColor=0D0D10&logo=nextdotjs&logoColor=4FD1A5">
-<img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-C6C0B4?style=flat-square&labelColor=0D0D10&logo=typescript&logoColor=4FD1A5">
-<img alt="Solidity" src="https://img.shields.io/badge/Solidity_0.8.24-C6C0B4?style=flat-square&labelColor=0D0D10&logo=solidity&logoColor=4FD1A5">
-<img alt="Docker" src="https://img.shields.io/badge/Docker_Compose-C6C0B4?style=flat-square&labelColor=0D0D10&logo=docker&logoColor=4FD1A5">
+<img alt="Python" src="https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white">
+<img alt="FastAPI" src="https://img.shields.io/badge/FastAPI-async-009688?logo=fastapi&logoColor=white">
+<img alt="Postgres" src="https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql&logoColor=white">
+<img alt="Kafka" src="https://img.shields.io/badge/Kafka-KRaft-C6C0B4?labelColor=231F20&logo=apachekafka&logoColor=white">
+<img alt="Redis" src="https://img.shields.io/badge/Redis-7-FF4438?logo=redis&logoColor=white">
+<img alt="Next.js" src="https://img.shields.io/badge/Next.js-15-C6C0B4?labelColor=000000&logo=nextdotjs&logoColor=white">
+<img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white">
+<img alt="Solidity" src="https://img.shields.io/badge/Solidity-0.8.24-C6C0B4?labelColor=363636&logo=solidity&logoColor=white">
+<img alt="Docker" src="https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white">
 </p>
 
 <p>
