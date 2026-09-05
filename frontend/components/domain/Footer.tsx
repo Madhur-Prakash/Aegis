@@ -86,6 +86,7 @@ export function Footer() {
 
         <Rule />
 
+        <InvertOnHover>
         <div className="foot-columns" {...peers.group}>
           <Reveal className="foot-brand">
             <span className="foot-brand-name">{t("brand")}</span>
@@ -113,6 +114,7 @@ export function Footer() {
             </Reveal>
           ))}
         </div>
+        </InvertOnHover>
 
         <Rule />
 

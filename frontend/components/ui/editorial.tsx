@@ -146,7 +146,17 @@ export function SectionOpener({
 
       {headline}
 
-      {lede ? <BlurLines>{lede}</BlurLines> : null}
+      {/* The lede takes the lens too, so the whole opener answers the pointer
+          the same way. */}
+      {lede ? (
+        interactive ? (
+          <InvertOnHover>
+            <BlurLines>{lede}</BlurLines>
+          </InvertOnHover>
+        ) : (
+          <BlurLines>{lede}</BlurLines>
+        )
+      ) : null}
     </header>
   );
 }
@@ -183,6 +193,9 @@ export function MicroGrid({
   // The same gesture the headline words use, keyed by row name rather than by
   // index so re-ordering the rows cannot leave the highlight on the wrong one.
   const peers = usePeerHover();
+  // Inside the lens copy the bar must not carry the `layoutId`: two elements
+  // sharing one id would have Framer animate *between* the copies.
+  const duplicate = useIsDuplicate();
   const letter = (i: number) => String.fromCharCode(97 + (i % 26));
 
   return (
@@ -215,12 +228,16 @@ export function MicroGrid({
                   simply disappeared. Inside, the bar grows with the type it is
                   inverting and cannot fall out of register with it. */}
               {on ? (
-                <motion.span
-                  layoutId={layoutId}
-                  className="microgrid-bar"
-                  transition={SPRING.layout}
-                  aria-hidden
-                />
+                duplicate ? (
+                  <span className="microgrid-bar" aria-hidden />
+                ) : (
+                  <motion.span
+                    layoutId={layoutId}
+                    className="microgrid-bar"
+                    transition={SPRING.layout}
+                    aria-hidden
+                  />
+                )
               ) : null}
               <span className="micro microgrid-name">{row.name}</span>
               <span className="micro microgrid-kind">{row.kind}</span>

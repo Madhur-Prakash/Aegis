@@ -2314,7 +2314,7 @@
   z-index: 2;
   pointer-events: none;
   background: var(--disc-ground);
-  will-change: clip-path;
+  will-change: clip-path, transform;
 }
 
 /* The lens rim: a hairline circle following the same springs as the clip, so
@@ -2341,4 +2341,60 @@
   color: var(--disc-ink);
   background: transparent;
   border-color: var(--disc-ink);
+}
+
+/* The lens now covers every text block on the landing page, so every neutral
+   text class takes the disc ink. Signal colours are deliberately absent from
+   this list: a PASS, FAIL or UNVERIFIABLE detail carries its hue inline, and an
+   inline style beats these rules -- hue is data, and a lens does not get to
+   recolour data on its way past. */
+.invert-layer .lede,
+.invert-layer .lede span,
+.invert-layer .micro,
+.invert-layer .nano,
+.invert-layer .prose,
+.invert-layer .quote-body,
+.invert-layer .quote-meta,
+.invert-layer .stat-k,
+.invert-layer .stat-v,
+.invert-layer .proofcell-v,
+.invert-layer .microgrid-name,
+.invert-layer .microgrid-kind,
+.invert-layer .microgrid-index,
+.invert-layer .microgrid-detail,
+.invert-layer .foot-link,
+.invert-layer .foot-brand-name {
+  color: var(--disc-ink);
+}
+
+/* The outlined poster fills solid inside the lens: a magnified wireframe reads
+   as a drawing error, a magnified letter reads as a lens. */
+.invert-layer .scrolltype-line--outline,
+.invert-layer .scrolltype-char {
+  color: var(--disc-ink);
+  -webkit-text-stroke-color: var(--disc-ink);
+}
+
+/* The hovered row's bar is bone, which vanishes on the white disc; inside the
+   lens it is a faint wash of the ink instead, so the row still reads as lit. */
+.invert-layer .microgrid-bar {
+  background: var(--disc-ink);
+  opacity: 0.08;
+}
+
+/* The lit row's text needs its own rule at higher specificity: the row's own
+   `on` rule sets it to `--ink-900`, which on the light theme is the bone canvas
+   colour -- measured inside the white disc, the magnified row was invisible.
+   Same for the lit proof cell's label. */
+.invert-layer .microgrid-cells[data-peer="on"] .microgrid-name,
+.invert-layer .microgrid-cells[data-peer="on"] .microgrid-kind,
+.invert-layer .microgrid-cells[data-peer="on"] .microgrid-index,
+.invert-layer .microgrid-cells[data-peer="on"] .microgrid-detail,
+.invert-layer .proofcell[data-peer="on"] .nano {
+  color: var(--disc-ink);
+}
+
+/* A magnified stat placeholder stays quiet. */
+.invert-layer .stat-v--pending {
+  opacity: 0.4;
 }

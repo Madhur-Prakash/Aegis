@@ -262,9 +262,11 @@ export default function LandingPage() {
           </motion.div>
 
           <motion.div style={reduced ? undefined : { y: ledeY, opacity: ledeOpacity }}>
-            <BlurLines cue={CUE.lede} pace={2.2}>
-              {t("hero.sub")}
-            </BlurLines>
+            <InvertOnHover>
+              <BlurLines cue={CUE.lede} pace={2.2}>
+                {t("hero.sub")}
+              </BlurLines>
+            </InvertOnHover>
           </motion.div>
 
           <div className="row hero-cta">
@@ -320,6 +322,7 @@ export default function LandingPage() {
             style={{ transformOrigin: "0% 50%" }}
           />
 
+          <InvertOnHover>
           <motion.dl className="hero-stats" style={reduced ? undefined : { y: statsY }}>
             {stats.map((stat, index) => (
               <motion.div
@@ -337,6 +340,7 @@ export default function LandingPage() {
               </motion.div>
             ))}
           </motion.dl>
+          </InvertOnHover>
 
           {evals.status === "ready" && evals.data.available ? (
             <span className="nano hero-measured">
@@ -373,9 +377,12 @@ export default function LandingPage() {
             loop, and readable whole at every scroll position. The travel and
             the type size are solved together in `ScrollType`, so the size is
             not overridden here. */}
-        <ScrollType tone="outline">UNVERIFIABLE</ScrollType>
+        <InvertOnHover>
+          <ScrollType tone="outline">UNVERIFIABLE</ScrollType>
+        </InvertOnHover>
 
         <Reveal>
+          <InvertOnHover>
           <blockquote className="pullquote" {...quotePeers.group}>
             <span className="nano quote-meta" {...quotePeers.peer("label")}>
               {t("section.quoteLabel")}
@@ -387,6 +394,7 @@ export default function LandingPage() {
               {t("section.quoteAttr")}
             </span>
           </blockquote>
+          </InvertOnHover>
         </Reveal>
       </section>
 
@@ -407,10 +415,12 @@ export default function LandingPage() {
           ]}
           lede={t("hero.whyChain")}
         />
-        <MicroGrid
-          rows={chainRows}
-          columns={[t("section.colWhat"), t("section.colWhere"), t("section.colWhy")]}
-        />
+        <InvertOnHover>
+          <MicroGrid
+            rows={chainRows}
+            columns={[t("section.colWhat"), t("section.colWhere"), t("section.colWhy")]}
+          />
+        </InvertOnHover>
       </section>
 
       {/* ── 04 / 06 · the invariants ─────────────────────────────────────── */}
@@ -430,10 +440,12 @@ export default function LandingPage() {
           ]}
           lede={t("section.invariantsLede")}
         />
-        <MicroGrid
-          rows={invariants}
-          columns={[t("section.colId"), t("section.colInvariant"), t("section.colProof")]}
-        />
+        <InvertOnHover>
+          <MicroGrid
+            rows={invariants}
+            columns={[t("section.colId"), t("section.colInvariant"), t("section.colProof")]}
+          />
+        </InvertOnHover>
       </section>
 
       {/* ── 05 / 06 · the measured result ───────────────────────────────── */}
@@ -460,6 +472,7 @@ export default function LandingPage() {
         />
 
         {headline ? (
+          <InvertOnHover>
           <ProofStrip
             cells={[
               { key: "accuracy", label: t("section.accuracy"), text: pct(headline.accuracy, 0) },
@@ -490,6 +503,7 @@ export default function LandingPage() {
               },
             ]}
           />
+          </InvertOnHover>
         ) : null}
 
         <Reveal index={1}>

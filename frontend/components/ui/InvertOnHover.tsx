@@ -15,6 +15,13 @@
  * inverted palette clipped to a circle at the pointer. Both layers are the same
  * markup, so the type cannot drift out of register.
  *
+ * The second copy is also *magnified* about the pointer. That is what makes it
+ * a lens rather than a recolour: the point under the cursor maps to itself and
+ * everything around it spreads outward, so the letters inside the disc are
+ * larger than the same letters beside it. The clip is applied in the layer's
+ * own coordinates, before its transform, so its radius is divided by the
+ * magnification to keep the visible disc at the intended size.
+ *
  * `clip-path: circle()` and a transform are all that animate, so it composites
  * on the GPU. The overlay is `aria-hidden` and `pointer-events: none` -- it is a
  * duplicate of text a screen reader has already been given.
@@ -34,6 +41,8 @@ export function InvertOnHover({
   children,
   scale = 0.8,
   bleedY = 20,
+  magnify = 1.4,
+  minRadius = 56,
   className = "",
 }: {
   children: ReactNode;
@@ -62,6 +71,14 @@ export function InvertOnHover({
    * start and end of a line.  `.shell` clips it so the page cannot scroll.
    */
   bleedY?: number;
+  /** How much larger the type inside the disc is than the type beside it. */
+  magnify?: number;
+  /**
+   * The lens floor, in px. The radius follows the type it sits on, which is
+   * right for a headline and useless for a lede: 0.8 of 18px is a 14px disc.
+   * Small type gets a lens big enough to read a word or two through.
+   */
+  minRadius?: number;
   className?: string;
 }) {
   const reduced = useReducedMotion();
@@ -97,7 +114,7 @@ export function InvertOnHover({
 
   // Until the measurement lands the disc has no size, so it cannot flash at the
   // wrong scale; `grow` only ever gets a measured radius.
-  const radius = Math.round(type * scale);
+  const radius = type ? Math.max(minRadius, Math.round(type * scale)) : 0;
 
   // Springs, so the disc trails the pointer slightly instead of snapping to it.
   const rawX = useMotionValue(-9999);
@@ -114,10 +131,22 @@ export function InvertOnHover({
   // while the layout is untouched. The pointer is measured against that grown
   // box, and the overlay spans exactly it, so the clip needs no offset of its
   // own.
-  const clip = useTransform([x, y, r], (values: number[]) => {
-    const [cx = 0, cy = 0, cr = 0] = values;
-    return `circle(${cr}px at ${cx}px ${cy}px)`;
+  // Magnification is a spring from 1 to `magnify` while the pointer is inside,
+  // not a constant. At rest the duplicate must sit at scale 1, exactly over the
+  // type it copies: scaled about the parked pointer position (-9999, -9999) it
+  // was thrown thousands of pixels down and right -- invisible under a
+  // zero-radius clip, but a transform still counts toward the document's
+  // scrollable overflow, so every lens on the page was adding to a blank tail.
+  const zoom = useMotionValue(1);
+  const mag = useSpring(zoom, SPRING.cursor);
+  const clip = useTransform([x, y, r, mag], (values: number[]) => {
+    const [cx = 0, cy = 0, cr = 0, m = 1] = values;
+    return `circle(${cr / m}px at ${cx}px ${cy}px)`;
   });
+
+  // The magnification is about the pointer, so the transform origin follows it.
+  const originX = useTransform(x, (value) => `${value}px`);
+  const originY = useTransform(y, (value) => `${value}px`);
 
   // A hairline at the lens rim, following the same springs.
   //
@@ -160,17 +189,24 @@ export function InvertOnHover({
       rawY.jump(event.clientY - box.top);
       setInside(true);
       grow.set(radius);
+      zoom.set(magnify);
     },
-    [rawX, rawY, grow, radius],
+    [rawX, rawY, grow, zoom, radius, magnify],
   );
 
   const leave = useCallback(() => {
     grow.set(0);
+    zoom.set(1);
     setInside(false);
-  }, [grow]);
+  }, [grow, zoom]);
 
-  if (!live) return <div className={className}>{children}</div>;
-
+  // One tree in both states. `live` starts false and flips after mount, and an
+  // early return to a bare <div> made the flip a *different element structure*
+  // -- so React remounted the children: every wrapped block replayed its
+  // entrance, the hero headline flapped in twice, and cue timers inside wrapped
+  // blocks restarted while their unwrapped siblings did not. Measured as a
+  // 500ms stall between the rule landing and the stats starting. The layer and
+  // rim are simply added inside the same host when the pointer can hover.
   return (
     /* Both copies are one peer group. Without this the duplicate keeps its own
        hover state -- it never receives pointer events, so it stays at rest --
@@ -180,39 +216,50 @@ export function InvertOnHover({
       <div
         ref={host}
         className={`invert-host ${className}`}
-        onPointerEnter={enter}
-        onPointerMove={track}
-        onPointerLeave={leave}
-        data-inside={inside}
-        style={{
-          padding: `${bleedY}px ${radius}px`,
-          margin: `${-bleedY}px ${-radius}px`,
-        }}
+        onPointerEnter={live ? enter : undefined}
+        onPointerMove={live ? track : undefined}
+        onPointerLeave={live ? leave : undefined}
+        data-inside={live ? inside : undefined}
+        style={
+          live
+            ? {
+                padding: `${bleedY}px ${radius}px`,
+                margin: `${-bleedY}px ${-radius}px`,
+              }
+            : undefined
+        }
       >
         {children}
-        {/* `inset: 0` resolves against the host's padding box -- the grown one
-            -- and the same padding puts this copy back in register with the
-            one above. */}
-        <motion.div
-          className="invert-layer"
-          style={{
-            clipPath: clip,
-            inset: 0,
-            padding: `${bleedY}px ${radius}px`,
-          }}
-          aria-hidden
-        >
-          {/* Everything in here is already-arrived scenery. Chrome's
-              IntersectionObserver honours this layer's `clip-path`, so a
-              `whileInView` entrance inside it would never fire and the disc
-              would paint its ground over nothing. */}
-          <DuplicateProvider>{children}</DuplicateProvider>
-        </motion.div>
-        <motion.div
-          className="invert-rim"
-          style={{ width: rim, height: rim, left: rimLeft, top: rimTop, opacity: rimOpacity }}
-          aria-hidden
-        />
+        {live ? (
+          <>
+            {/* `inset: 0` resolves against the host's padding box -- the grown
+                one -- and the same padding puts this copy back in register with
+                the one above. */}
+            <motion.div
+              className="invert-layer"
+              style={{
+                clipPath: clip,
+                scale: mag,
+                originX,
+                originY,
+                inset: 0,
+                padding: `${bleedY}px ${radius}px`,
+              }}
+              aria-hidden
+            >
+              {/* Everything in here is already-arrived scenery. Chrome's
+                  IntersectionObserver honours this layer's `clip-path`, so a
+                  `whileInView` entrance inside it would never fire and the disc
+                  would paint its ground over nothing. */}
+              <DuplicateProvider>{children}</DuplicateProvider>
+            </motion.div>
+            <motion.div
+              className="invert-rim"
+              style={{ width: rim, height: rim, left: rimLeft, top: rimTop, opacity: rimOpacity }}
+              aria-hidden
+            />
+          </>
+        ) : null}
       </div>
     </PeerHoverProvider>
   );
