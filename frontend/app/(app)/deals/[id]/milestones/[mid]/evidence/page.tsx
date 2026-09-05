@@ -150,7 +150,6 @@ export default function EvidencePage() {
               <Button
                 onClick={() => void runVerification()}
                 disabled={verifying}
-                cursorLabel={t("deal.verify")}
               >
                 {verifying ? t("verification.running") : t("deal.verify")}
               </Button>

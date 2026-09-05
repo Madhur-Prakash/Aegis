@@ -298,7 +298,7 @@
     "demoNote": "The demo switch issues a real session for a seeded user through the normal login path. It does not bypass authorization.",
     "missingToken": "This link has no token. Use the link from the email exactly as it was sent.",
     "organizationHint": "Optional. Defaults to your own name.",
-    "passwordHint": "At least 12 characters.",
+    "passwordHint": "At least 6 characters.",
     "resetDone": "Password changed. Sign in with the new one.",
     "resetRevokes": "Every other session is signed out."
   },

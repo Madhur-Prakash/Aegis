@@ -28,7 +28,6 @@ import { Shell } from "@/components/domain/Shell";
 import {
   DecisionScale,
   FigureProvenance,
-  HeadlineChip,
   MicroGrid,
   ProofStrip,
   ScrollType,
@@ -305,7 +304,7 @@ export default function LandingPage() {
                 animate={actionsCued ? "show" : "hidden"}
               >
                 <Link href={cta.href} data-cursor="">
-                  <Button variant={cta.primary ? "primary" : "ghost"} cursorLabel={cta.label}>
+                  <Button variant={cta.primary ? "primary" : "ghost"}>
                     {cta.label}
                   </Button>
                 </Link>
@@ -498,15 +497,6 @@ export default function LandingPage() {
             ],
           ]}
           lede={t("section.measuredLede")}
-          chip={
-            headline ? (
-              <HeadlineChip
-                value={`${num(headline.labelled_bundles)} ${t("section.chipBundles")}`}
-                tone="pass"
-                label={t("section.chipLabel")}
-              />
-            ) : undefined
-          }
         />
 
         {headline ? (
@@ -598,7 +588,7 @@ export default function LandingPage() {
           </div>
         </InvertOnHover>
         <Link href={status === "signed-in" ? "/deals" : "/register"} data-cursor="">
-          <Button cursorLabel={t("cta.start")}>{t("cta.start")}</Button>
+          <Button>{t("cta.start")}</Button>
         </Link>
         <span className="nano cta-meta" {...ctaPeers.peer("footnote")}>
           {t("cta.footnote")}

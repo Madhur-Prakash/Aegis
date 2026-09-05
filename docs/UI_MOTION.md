@@ -171,6 +171,29 @@ card.
 | 8 | tamper check | one 6px shake and a red underline on the mismatched digest |
 | 9 | closing CTA | per-character scramble cycling three phrases |
 
+### The cursor has five states, and only two of them carry words
+
+| state | size | when |
+|:--|:--|:--|
+| `rest` | 8px dot | nothing interactive under the pointer |
+| `hover` | 48px disc — **the magnify** | any `[data-cursor]` element |
+| `label` | auto × 32px pill | `[data-cursor="label:VIEW PROOF"]` |
+| `press` | 36px disc | pointer down |
+| `text` | 2 × 22px caret | `[data-cursor="text"]` |
+
+> [!IMPORTANT]
+> **The pill is for things that do not say their own name.** A card and a list row carry a title, not
+> a verb, so the cursor supplies one: `VIEW PROOF`, `OPEN DEAL`. A **button already is the verb**, so
+> a label on it repeats the text underneath — and because the pill is opaque and centred on the
+> pointer, it lands directly on the words it is duplicating and neither is readable.
+>
+> `Button` therefore has **no `cursorLabel` prop at all**. Removing the option is what keeps this
+> fixed; leaving it and asking callers not to use it would not. Thirteen buttons had accumulated one.
+> `MagicList` and the hover cards keep theirs.
+
+Label copy is two words maximum, uppercase, verb-first — a third word is the signal that it belongs
+on a button instead.
+
 ### The one thing that never comes to rest
 
 <img alt="" src="https://img.shields.io/badge/UNVERIFIABLE-NEVER_SETTLES-FFC24B?style=flat-square&labelColor=0D0D10">
@@ -237,8 +260,20 @@ numerically — otherwise a CSS transition and its Framer counterpart could drif
 interaction would take two different times depending on which layer animated it.
 
 A line may be exempted with a `tokens-allow:` comment stating the reason, which puts the exemption in
-the diff rather than in a config file. **There is exactly one**: the `prefers-reduced-motion` `0.01ms`
-kill switch, which is not a design duration.
+the diff rather than in a config file. **There are two**, and both are cases where a token would be
+wrong rather than merely inconvenient:
+
+| exemption | why a token cannot work |
+|:--|:--|
+| the `prefers-reduced-motion` `0.01ms` kill switch | It is not a design duration. It is the absence of one. |
+| the literal white fill and black label on `.cursor` | `mix-blend-mode: difference` only inverts its backdrop when the fill is a fixed extreme, and **every colour token flips with the theme** — `--white` is redefined to the near-black ink under `[data-theme="light"]`. Blending against it produced a disc one shade off the paper (contrast **1.08**, invisible) instead of its inverse. Pinned to white, the disc reads at **18.66** on dark and **16.59** on light. |
+
+> [!NOTE]
+> The cursor exemption is a real limit of "hue is data" as a rule. Every semantic token in this
+> system answers *what does this mean*, and flips so the answer survives a theme change. The cursor
+> needs the opposite — a value that means nothing and never moves — because its job is to be the
+> arithmetic inverse of whatever is under it. There is no token for that, and inventing one would put
+> a non-semantic colour in the semantic layer.
 
 > [!IMPORTANT]
 > Both checks run **inside the Docker build**, so an image cannot be produced from violating source.

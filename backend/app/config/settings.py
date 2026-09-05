@@ -56,7 +56,7 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_TTL_MINUTES: int = 15
     REFRESH_TOKEN_TTL_DAYS: int = 14
     COOKIE_SECURE: bool = False
-    PASSWORD_MIN_LENGTH: int = 10
+    PASSWORD_MIN_LENGTH: int = 6
 
     # ── Email ───────────────────────────────────────────────────────────
     EMAIL_PROVIDER: Literal["development", "smtp"] = "development"

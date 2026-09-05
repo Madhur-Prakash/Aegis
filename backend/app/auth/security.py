@@ -20,33 +20,6 @@ _hasher = PasswordHasher(
     time_cost=3, memory_cost=64 * 1024, parallelism=2, hash_len=32, salt_len=16
 )
 
-# A short, explicit weak list.  No composition theatre, just a length floor and
-# a refusal of the passwords that actually appear in breach corpora.
-_WEAK = frozenset(
-    {
-        "password",
-        "password1",
-        "password123",
-        "passw0rd",
-        "letmein123",
-        "12345678",
-        "123456789",
-        "1234567890",
-        "qwertyuiop",
-        "iloveyou1",
-        "welcome123",
-        "admin12345",
-        "changeme123",
-        "aegis12345",
-        "abcd123456",
-        "monkey12345",
-        "football123",
-        "dragon12345",
-        "sunshine123",
-        "princess123",
-    }
-)
-
 
 def hash_password(password: str) -> str:
     validate_password(password)
@@ -96,15 +69,17 @@ def needs_rehash(password_hash: str) -> bool:
 
 
 def validate_password(password: str) -> None:
+    """The length floor is the whole policy.
+
+    There is deliberately no composition rule and no common-password denylist:
+    a breach-corpus password such as ``password123`` is accepted.  ``max_length``
+    on the request schemas is not part of this policy -- it bounds the input to
+    Argon2id, which is a denial-of-service guard rather than a strength one.
+    """
     if len(password) < settings.PASSWORD_MIN_LENGTH:
         raise ValidationFailed(
             message=f"Password must be at least {settings.PASSWORD_MIN_LENGTH} characters.",
             details={"field": "password", "min_length": settings.PASSWORD_MIN_LENGTH},
-        )
-    if password.lower() in _WEAK:
-        raise ValidationFailed(
-            message="That password is too common. Choose another.",
-            details={"field": "password"},
         )
 
 

@@ -1601,6 +1601,13 @@
 }
 
 /* ── Cursor (ui/04 §1) ──────────────────────────────────────────────────── */
+/* `difference` only inverts its backdrop when the fill is a literal white, and
+   every colour token flips with the theme -- `--white` is redefined to the
+   near-black ink under `[data-theme="light"]`.  Blending that against the light
+   paper produced a disc roughly one shade off the background (contrast 1.08),
+   which is why the cursor was invisible in light mode.  A fixed white keeps the
+   disc a true inverse in both themes (18.66 dark, 16.59 light) and still claims
+   no semantic hue, which is the whole reason this cursor is not red. */
 .cursor {
   position: fixed;
   top: 0;
@@ -1608,11 +1615,16 @@
   z-index: var(--z-cursor);
   pointer-events: none;
   border-radius: var(--r-full);
-  background: var(--white);
+  background: #fff; /* tokens-allow: difference needs literal white; --white flips per theme */
   mix-blend-mode: difference;
   will-change: transform;
 }
 
+/* Same reason as `.cursor` above: the label blends with the disc as one group,
+   so its colour has to be a fixed extreme too.  Differencing against black
+   returns the backdrop unchanged while the pill around it becomes the inverse,
+   so the two always separate.  With `--ink-900` the light theme collapsed to
+   near-black text on a near-black pill (contrast 1.10); it is 16.59 now. */
 .cursor-label {
   display: block;
   padding: 0 0.75rem;
@@ -1620,7 +1632,7 @@
   font: 600 var(--fs-micro) / 32px var(--font-mono);
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--ink-900);
+  color: #000; /* tokens-allow: paired with the literal white fill on .cursor */
   white-space: nowrap;
 }
 

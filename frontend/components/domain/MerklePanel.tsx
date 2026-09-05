@@ -240,7 +240,6 @@ export function MerklePanel({ artifacts, root }: { artifacts: Artifact[]; root: 
               variant="danger"
               onClick={() => void runCheck(true)}
               disabled={!artifact || tamper.running}
-              cursorLabel={t("provenance.tamperOneByte")}
             >
               {t("provenance.tamperOneByte")}
             </Button>

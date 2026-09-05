@@ -69,7 +69,7 @@ function ResetPasswordInner() {
               type="password"
               autoComplete="new-password"
               required
-              minLength={12}
+              minLength={6}
               value={password}
               onChange={(event) => setPassword(event.target.value)}
             />

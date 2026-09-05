@@ -23,7 +23,7 @@ class Page(BaseModel):
 # ── Auth ────────────────────────────────────────────────────────────────────
 class RegisterIn(BaseModel):
     email: EmailStr
-    password: str = Field(min_length=10, max_length=200)
+    password: str = Field(min_length=6, max_length=200)
     name: str = Field(min_length=1, max_length=200)
     organization_name: str | None = Field(default=None, max_length=200)
 
@@ -58,12 +58,12 @@ class ForgotPasswordIn(BaseModel):
 
 class ResetPasswordIn(BaseModel):
     token: str
-    new_password: str = Field(min_length=10, max_length=200)
+    new_password: str = Field(min_length=6, max_length=200)
 
 
 class ChangePasswordIn(BaseModel):
     current_password: str
-    new_password: str = Field(min_length=10, max_length=200)
+    new_password: str = Field(min_length=6, max_length=200)
 
 
 class MeOut(BaseModel):

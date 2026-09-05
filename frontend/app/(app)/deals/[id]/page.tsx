@@ -99,7 +99,6 @@ export default function DealCockpit() {
             <Button
               onClick={() => void act("sign", () => api.signTerms(dealId))}
               disabled={busy !== null || !verified}
-              cursorLabel={t("deal.signTerms")}
             >
               {t("deal.signTerms")}
             </Button>
@@ -108,7 +107,6 @@ export default function DealCockpit() {
             <Button
               onClick={() => void act("fund", () => api.fund(dealId))}
               disabled={busy !== null || !verified}
-              cursorLabel={t("deal.fund")}
             >
               {t("deal.fund")}
             </Button>

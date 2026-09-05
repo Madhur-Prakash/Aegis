@@ -173,7 +173,6 @@ export function ReviewDecision({
             <Button
               onClick={() => void act("SPLIT")}
               disabled={busy || !reasonValid || !splitValid}
-              cursorLabel={t("review.confirm")}
             >
               {t("review.confirm")}
             </Button>
@@ -183,7 +182,6 @@ export function ReviewDecision({
                 tone="pass"
                 onClick={() => void act("APPROVE")}
                 disabled={busy || !reasonValid}
-                cursorLabel={t("review.approve")}
               >
                 {t("review.approve")}
               </Button>
@@ -191,7 +189,6 @@ export function ReviewDecision({
                 variant="danger"
                 onClick={() => void act("REJECT")}
                 disabled={busy || !reasonValid}
-                cursorLabel={t("review.reject")}
               >
                 {t("review.reject")}
               </Button>

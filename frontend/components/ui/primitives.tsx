@@ -18,16 +18,30 @@ import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { useT } from "@/lib/i18n";
 
 // ── Buttons ─────────────────────────────────────────────────────────────────
+/**
+ * A button takes the **magnify** cursor (ui/04 §1: the 48px `hover` disc), never
+ * the labelled pill.
+ *
+ * The pill exists to name an action on something that does not say its own name
+ * -- the pack's examples are a card and a link (`label:VIEW PROOF`,
+ * `label:OPEN DEAL`).  A button already *is* the verb, so a label repeats the
+ * text underneath it: the pill rendered "CREATE AN ACCOUNT" directly on top of a
+ * button reading "CREATE AN ACCOUNT", and the two were unreadable through each
+ * other.  Twelve buttons carried that duplication.
+ *
+ * So there is deliberately no `cursorLabel` prop here.  Removing the option is
+ * what stops the bug coming back; leaving it and asking callers not to use it
+ * would not.  `MagicList` and the hover cards keep their labels, which is where
+ * the pill belongs.
+ */
 type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: "primary" | "ghost" | "danger" | "capsule";
   tone?: "pass" | "unverified" | "fail";
-  cursorLabel?: string;
 };
 
 export function Button({
   variant = "primary",
   tone,
-  cursorLabel,
   className = "",
   children,
   ...rest
@@ -35,7 +49,9 @@ export function Button({
   return (
     <button
       className={`btn btn--${variant} ${tone ? `btn--tone-${tone}` : ""} ${className}`}
-      data-cursor={rest.disabled ? undefined : cursorLabel ? `label:${cursorLabel}` : ""}
+      // "" is the magnify disc; `undefined` removes the attribute entirely so a
+      // disabled button keeps the native cursor and no disc appears.
+      data-cursor={rest.disabled ? undefined : ""}
       {...rest}
     >
       {children}

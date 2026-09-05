@@ -93,7 +93,7 @@ export default function RegisterPage() {
           type="password"
           autoComplete="new-password"
           required
-          minLength={12}
+          minLength={6}
           value={password}
           onChange={(event) => setPassword(event.target.value)}
         />
@@ -105,7 +105,7 @@ export default function RegisterPage() {
         </span>
       ) : null}
 
-      <Button type="submit" disabled={busy} cursorLabel={t("auth.signUp")}>
+      <Button type="submit" disabled={busy}>
         {t("auth.signUp")}
       </Button>
 

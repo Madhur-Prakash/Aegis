@@ -155,12 +155,18 @@ async def test_duplicate_registration_is_a_typed_conflict(client):
 
 
 @pytest.mark.asyncio
-async def test_a_weak_password_is_refused(client):
+async def test_a_common_password_is_accepted(client):
+    """Length is the whole policy: there is no common-password denylist.
+
+    This asserts the absence of a rule rather than its presence, so that
+    re-adding a strength check is a visible test change rather than a silent
+    tightening.  ``password123`` is a breach-corpus password and is allowed.
+    """
     response = await client.post(
         "/api/v1/auth/register",
         json={"email": "weak@aegistest.dev", "password": "password123", "name": "W"},
     )
-    assert response.status_code == 422
+    assert response.status_code == 201
 
 
 @pytest.mark.asyncio

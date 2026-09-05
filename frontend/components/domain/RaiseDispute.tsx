@@ -122,7 +122,6 @@ export function RaiseDispute({
             type="submit"
             variant="danger"
             disabled={busy || !valid}
-            cursorLabel={t("deal.raiseDispute")}
           >
             {t("deal.raiseDispute")}
           </Button>

@@ -80,7 +80,7 @@ export default function LoginPage() {
         </span>
       ) : null}
 
-      <Button type="submit" disabled={busy} cursorLabel={t("auth.signIn")}>
+      <Button type="submit" disabled={busy}>
         {t("auth.signIn")}
       </Button>
 

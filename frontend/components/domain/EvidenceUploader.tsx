@@ -282,7 +282,6 @@ export function EvidenceUploader({
           <Button
             onClick={() => void submit()}
             disabled={submitting || artifacts.length === 0}
-            cursorLabel={t("evidence.submit")}
           >
             {t("evidence.submit")}
           </Button>
