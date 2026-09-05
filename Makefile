@@ -25,7 +25,7 @@ UV_RUN       := $(UV) run --project $(BACKEND)
 NPM          := npm --prefix $(FRONTEND)
 FORGE        := forge
 
-.PHONY: help bootstrap up up-build down destroy logs ps \
+.PHONY: help bootstrap ensure-env up up-build down destroy logs ps \
         migrate seed demo demo-reset eval eval-demo dataset \
         lint fmt typecheck test test-unit test-integration import-lint secret-scan \
         contracts-build contracts-test deploy-contract contracts-deploy \
@@ -39,22 +39,31 @@ help: ## Show this help
 	@printf '\n'
 
 # ── Environment ─────────────────────────────────────────────────────────────
-bootstrap: ## Install backend, frontend and contract dependencies
-	@test -f .env || (cp .env.example .env && echo "created .env from .env.example")
+bootstrap: ensure-env ## Install backend, frontend and contract dependencies
 	$(UV) sync --project $(BACKEND) --all-extras
 	$(NPM) ci
 	cd $(CONTRACTS) && $(FORGE) install --no-git || true
 	@echo "bootstrap done - next: make up"
 
+# ── Secrets ─────────────────────────────────────────────────────────────────
+#  JWT_SECRET signs access tokens AND keys the presigned-artifact HMAC, so the
+#  compose fallback -- a constant published in this repository -- must never be
+#  what a running stack actually uses.  This fills it once, with real entropy,
+#  and is a no-op on every later run: regenerating it on each `make up` would
+#  sign every user out.  `up` and `up-build` both depend on it, so there is no
+#  path through the documented quick start that boots on the published default.
+ensure-env: ## Create .env if absent and replace placeholder secrets with real entropy
+	@sh scripts/ensure-env.sh
+
 # ── Containers ──────────────────────────────────────────────────────────────
-up: ## Start every service and wait for it to be healthy
+up: ensure-env ## Start every service and wait for it to be healthy
 	$(COMPOSE) up -d --wait
 	@echo "api      http://localhost:8000/docs"
 	@echo "app      http://localhost:3000"
 	@echo "mail     http://localhost:8025"
 	@echo "kafka-ui http://localhost:8080"
 
-up-build: ## Rebuild both images, then start everything
+up-build: ensure-env ## Rebuild both images, then start everything
 	$(COMPOSE) up -d --build --wait
 
 down: ## Stop every service, keep the volumes

@@ -338,7 +338,7 @@ Prerequisites: Docker Desktop, [`uv`](https://docs.astral.sh/uv/), Node 22, and
 git clone --recurse-submodules <this repo> && cd Aegis-Razorpay
 
 make bootstrap        # .env from .env.example, uv sync, npm ci, forge install
-make up               # every service, waits for real healthchecks
+make up               # generates any placeholder secret, then waits for real healthchecks
 make seed             # idempotent AND resumable demo data
 make demo             # drives the seeded deal through the whole narrative
 ```

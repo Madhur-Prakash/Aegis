@@ -89,9 +89,11 @@ export function PricingPanel({ pricing }: { pricing: Passport["pricing"] }) {
       {pricing.accepted ? (
         <div className="meta-grid">
           <Meta label={t("reputation.tier")} value={pricing.tier} />
+          {/* The tiers quote whole percents (spec 22: 0.8 is 0.8%, 30 is 30%);
+              pct() formats a fraction, so divide before formatting. */}
           <Meta
             label={t("reputation.escrowFee")}
-            value={pricing.escrow_fee_pct === null ? "-" : pct(pricing.escrow_fee_pct, 2)}
+            value={pricing.escrow_fee_pct === null ? "-" : pct(pricing.escrow_fee_pct / 100, 2)}
           />
           <Meta
             label={t("reputation.hold")}
@@ -103,7 +105,7 @@ export function PricingPanel({ pricing }: { pricing: Passport["pricing"] }) {
           />
           <Meta
             label={t("reputation.prefund")}
-            value={pricing.buyer_prefund_pct === null ? "-" : pct(pricing.buyer_prefund_pct, 0)}
+            value={pricing.buyer_prefund_pct === null ? "-" : pct(pricing.buyer_prefund_pct / 100, 0)}
           />
         </div>
       ) : (

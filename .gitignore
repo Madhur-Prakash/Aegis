@@ -56,3 +56,6 @@ Thumbs.db
 
 # Verification cookie jar (make verify-login)
 backend/.verify-cookies
+
+# Rendered product videos (large binaries; regenerate with videos/make.js)
+videos/
