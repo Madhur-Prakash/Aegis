@@ -59,11 +59,11 @@ everything else here describes how they are consumed and what enforces that.
 
 The product is monochrome. There are exactly **three** semantic hues and each one means one thing:
 
-| token | swatch | meaning |
-|:--|:--|:--|
-| `--sig-pass` (mint) | <img alt="mint" src="https://img.shields.io/badge/%234FD1A5-4FD1A5?style=flat-square&labelColor=4FD1A5"> | `PASS`, `RELEASE`, released money, a verified signature, an intact chain |
-| `--sig-unverified` (amber) | <img alt="amber" src="https://img.shields.io/badge/%23FFC24B-FFC24B?style=flat-square&labelColor=FFC24B"> | `UNVERIFIABLE`, `ESCALATE`, held money, under human review, a queued anchor |
-| `--sig-fail` (red) | <img alt="red" src="https://img.shields.io/badge/%23FF4A4A-FF4A4A?style=flat-square&labelColor=FF4A4A"> | `FAIL`, `REJECT`, refunded/adverse, a broken hash, a failed payout |
+| token | dark | light | meaning |
+|:--|:--|:--|:--|
+| `--sig-pass` (mint) | `#4FD1A5` | `#128A63` | `PASS`, `RELEASE`, released money, a verified signature, an intact chain |
+| `--sig-unverified` (amber) | `#FFC24B` | `#9A6400` | `UNVERIFIABLE`, `ESCALATE`, held money, under human review, a queued anchor |
+| `--sig-fail` (red) | `#FF4A4A` | `#C42121` | `FAIL`, `REJECT`, refunded/adverse, a broken hash, a failed payout |
 
 Each has a `-tint` (12–14% mix) for a fill and an `-edge` (40–45%) for a border, so a chip never needs
 a second colour. The light theme redefines all three (`#128A63`, `#9A6400`, `#C42121`) rather than

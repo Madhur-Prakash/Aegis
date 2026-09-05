@@ -248,15 +248,15 @@ Verifier pipeline only — no database, no rail, no chain.
 
 | claim | status |
 |:--|:--|
-| Verifier accuracy, escalation rate, Brier, confusion matrix | <img alt="" src="https://img.shields.io/badge/MEASURED-4FD1A5?style=flat-square&labelColor=0D0D10"> on 150 bundles containing real PDFs with a real text layer and real PNGs with real pixels. The extraction path is genuinely exercised. |
-| Suite B and Suite C integrity checks | <img alt="" src="https://img.shields.io/badge/MEASURED-4FD1A5?style=flat-square&labelColor=0D0D10"> against real Postgres — triggers, CHECK constraints, row locking and crash injection. |
-| Risk AUC, PR-AUC, Brier, pricing tier distribution | <img alt="" src="https://img.shields.io/badge/MEASURED-4FD1A5?style=flat-square&labelColor=0D0D10"> on a 2,000-deal synthetic corpus with a declared generative model ([Data](docs/DATA.md)). |
-| Latency | <img alt="" src="https://img.shields.io/badge/MEASURED-4FD1A5?style=flat-square&labelColor=0D0D10"> wall-clock on the build machine. |
-| Cost per verification | <img alt="" src="https://img.shields.io/badge/0.0_USD_MEASURED-4FD1A5?style=flat-square&labelColor=0D0D10"> (no provider called). The INR 2.5138 figure is a <img alt="" src="https://img.shields.io/badge/PROJECTION-FFC24B?style=flat-square&labelColor=0D0D10"> from measured token counts at pinned list prices. |
-| Prompt-cache hit rate | <img alt="" src="https://img.shields.io/badge/0.0_AND_HONESTLY_SO-FFC24B?style=flat-square&labelColor=0D0D10"> — there is no cache to hit without a provider. The cache-control shape is asserted by `tests/unit/test_prompt_cache_contract.py`. |
-| Model quality of a *live* LLM | <img alt="" src="https://img.shields.io/badge/NOT_MEASURED-FF4A4A?style=flat-square&labelColor=0D0D10"> Set `AI_PROVIDER=anthropic` or `groq` with a key and re-run `make eval`. |
-| Rupee movement | <img alt="" src="https://img.shields.io/badge/SIMULATED-FFC24B?style=flat-square&labelColor=0D0D10"> in this configuration. See the rail table below. |
-| On-chain anchoring | <img alt="" src="https://img.shields.io/badge/QUEUED,_NOT_CONFIRMED-FFC24B?style=flat-square&labelColor=0D0D10"> — no contract address is configured. Suite C verifies every queued anchor payload carries exactly the local attestation hash, so the moment a contract exists the right things get anchored. |
+| Verifier accuracy, escalation rate, Brier, confusion matrix | **Measured** on 150 bundles containing real PDFs with a real text layer and real PNGs with real pixels. The extraction path is genuinely exercised. |
+| Suite B and Suite C integrity checks | **Measured** against real Postgres — triggers, CHECK constraints, row locking and crash injection. |
+| Risk AUC, PR-AUC, Brier, pricing tier distribution | **Measured** on a 2,000-deal synthetic corpus with a declared generative model ([Data](docs/DATA.md)). |
+| Latency | **Measured** wall-clock on the build machine. |
+| Cost per verification | **0.0 USD measured** (no provider called). The INR 2.5138 figure is a **projection** from measured token counts at pinned list prices. |
+| Prompt-cache hit rate | **0.0, and honestly so** — there is no cache to hit without a provider. The cache-control shape is asserted by `tests/unit/test_prompt_cache_contract.py`. |
+| Model quality of a *live* LLM | **Not measured.** Set `AI_PROVIDER=anthropic` or `groq` with a key and re-run `make eval`. |
+| Rupee movement | **Simulated** in this configuration. See the rail table below. |
+| On-chain anchoring | **Queued, not confirmed** — no contract address is configured. Suite C verifies every queued anchor payload carries exactly the local attestation hash, so the moment a contract exists the right things get anchored. |
 
 ### Payment rail — labelled per operation
 

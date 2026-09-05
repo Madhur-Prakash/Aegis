@@ -251,12 +251,12 @@ by resetting a password and then calling `/auth/me` with the old token. See
 
 ### And nine found by attacking it
 
-A later adversarial pass — backend, contract and container configuration — found nine more. They are
-recorded here for the same reason: **the shape of the mistake is more instructive than the patch.**
-
 <img alt="" src="https://img.shields.io/badge/critical-2-FF4A4A?style=flat-square&labelColor=0D0D10">
 <img alt="" src="https://img.shields.io/badge/high-4-FF4A4A?style=flat-square&labelColor=0D0D10">
 <img alt="" src="https://img.shields.io/badge/medium-3-FFC24B?style=flat-square&labelColor=0D0D10">
+
+A later adversarial pass — backend, contract and container configuration — found nine more. They are
+recorded here for the same reason: **the shape of the mistake is more instructive than the patch.**
 
 > [!CAUTION]
 > **The two critical findings share a lesson worth more than either fix.** Both let a *seller pay

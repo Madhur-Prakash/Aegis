@@ -37,62 +37,53 @@ produced it, and the command that produced it is named.
 
 <table>
 <thead>
-<tr><th align="left">Document</th><th align="left">What it answers</th><th align="left">Signal</th></tr>
+<tr><th align="left">Document</th><th align="left">What it answers</th></tr>
 </thead>
 <tbody>
 
 <tr>
 <td valign="top"><a href="ARCHITECTURE.md"><b>Architecture</b></a></td>
 <td valign="top">How the pieces fit, where the one boundary that matters is drawn, and what breaks when each dependency fails.</td>
-<td valign="top" nowrap><img alt="" src="https://img.shields.io/badge/I2_I5_I12_I13-4FD1A5?style=flat-square&labelColor=0D0D10"><br><img alt="" src="https://img.shields.io/badge/services-10-C6C0B4?style=flat-square&labelColor=0D0D10"></td>
 </tr>
 
 <tr>
 <td valign="top"><a href="API.md"><b>API</b></a></td>
 <td valign="top">The envelope, the auth model, the full error taxonomy, the rate-limit buckets, and the conventions a generated schema cannot express.</td>
-<td valign="top" nowrap><img alt="" src="https://img.shields.io/badge/paths-75-C6C0B4?style=flat-square&labelColor=0D0D10"><br><img alt="" src="https://img.shields.io/badge/typed_errors-27-4FD1A5?style=flat-square&labelColor=0D0D10"></td>
 </tr>
 
 <tr>
 <td valign="top"><a href="DATA.md"><b>Data</b></a></td>
 <td valign="top">Every corpus, every base rate marked <code>[sourced]</code> or <code>[assumed]</code>, and the published generative model behind the labels.</td>
-<td valign="top" nowrap><img alt="" src="https://img.shields.io/badge/deals-2000-C6C0B4?style=flat-square&labelColor=0D0D10"><br><img alt="" src="https://img.shields.io/badge/corpus-SYNTHETIC-FFC24B?style=flat-square&labelColor=0D0D10"></td>
 </tr>
 
 <tr>
 <td valign="top"><a href="SECURITY.md"><b>Security</b></a></td>
 <td valign="top">Ten adversaries and what stops each one — then a section naming the thirteen things that are <i>not</i> built.</td>
-<td valign="top" nowrap><img alt="" src="https://img.shields.io/badge/adversaries-10-C6C0B4?style=flat-square&labelColor=0D0D10"><br><img alt="" src="https://img.shields.io/badge/named_gaps-13-FF4A4A?style=flat-square&labelColor=0D0D10"></td>
 </tr>
 
 <tr>
 <td valign="top"><a href="OPERATIONS.md"><b>Operations</b></a></td>
 <td valign="top">Starting it, moving it onto real test credentials, the three numbers to watch, and a runbook for each way it goes wrong.</td>
-<td valign="top" nowrap><img alt="" src="https://img.shields.io/badge/start-one_command-4FD1A5?style=flat-square&labelColor=0D0D10"><br><img alt="" src="https://img.shields.io/badge/runbook-8_faults-C6C0B4?style=flat-square&labelColor=0D0D10"></td>
 </tr>
 
 <tr>
 <td valign="top"><a href="DEMO.md"><b>Demo</b></a></td>
 <td valign="top">Six minutes, one deal, every branch that matters — with the URL to open and the sentence to say at each step.</td>
-<td valign="top" nowrap><img alt="" src="https://img.shields.io/badge/runtime-6_min-C6C0B4?style=flat-square&labelColor=0D0D10"><br><img alt="" src="https://img.shields.io/badge/ledger_events-37-4FD1A5?style=flat-square&labelColor=0D0D10"></td>
 </tr>
 
 <tr>
 <td valign="top"><a href="UI_MOTION.md"><b>UI &amp; Motion</b></a></td>
 <td valign="top">Three semantic hues, nine motion moments, and the build steps that fail if a component reintroduces a literal.</td>
-<td valign="top" nowrap><img alt="" src="https://img.shields.io/badge/hues-3-C6C0B4?style=flat-square&labelColor=0D0D10"><br><img alt="" src="https://img.shields.io/badge/gates-2_in_build-4FD1A5?style=flat-square&labelColor=0D0D10"></td>
 </tr>
 
 <tr>
 <td valign="top"><a href="DECISIONS.md"><b>Decisions</b></a></td>
 <td valign="top">Twelve ADRs, and — first on the page — the table of things deliberately <b>not</b> adopted.</td>
-<td valign="top" nowrap><img alt="" src="https://img.shields.io/badge/ADRs-12-C6C0B4?style=flat-square&labelColor=0D0D10"><br><img alt="" src="https://img.shields.io/badge/rejected-12-FFC24B?style=flat-square&labelColor=0D0D10"></td>
 </tr>
 
 <tr>
 <td valign="top"><a href="LIMITATIONS.md"><b>Limitations</b></a></td>
 <td valign="top">Everything simulated, missing, or not measured — including three defects this build found by running itself.</td>
-<td valign="top" nowrap><img alt="" src="https://img.shields.io/badge/rail-SIMULATED-FFC24B?style=flat-square&labelColor=0D0D10"><br><img alt="" src="https://img.shields.io/badge/contract-NOT_DEPLOYED-FFC24B?style=flat-square&labelColor=0D0D10"></td>
 </tr>
 
 </tbody>
@@ -114,8 +105,6 @@ Pick the one that matches why you are here.
 
 <td valign="top" width="33%">
 
-<img alt="" src="https://img.shields.io/badge/path-REVIEWER-4FD1A5?style=flat-square&labelColor=0D0D10">
-
 **Judging it in ten minutes**
 
 1. [Overview — the invariants](../README.md#the-invariants)
@@ -129,8 +118,6 @@ Ends on what is *not* true. That is deliberate.
 
 <td valign="top" width="33%">
 
-<img alt="" src="https://img.shields.io/badge/path-ENGINEER-C6C0B4?style=flat-square&labelColor=0D0D10">
-
 **Reading the code**
 
 1. [Architecture §1 — the boundary](ARCHITECTURE.md#1-the-one-boundary-that-matters)
@@ -141,8 +128,6 @@ Ends on what is *not* true. That is deliberate.
 </td>
 
 <td valign="top" width="33%">
-
-<img alt="" src="https://img.shields.io/badge/path-ADVERSARY-FF4A4A?style=flat-square&labelColor=0D0D10">
 
 **Attacking it**
 

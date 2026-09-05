@@ -77,13 +77,13 @@ the error taxonomy, and the conventions that make the API predictable.
 
 ## 2. Authentication
 
-Access and refresh tokens are issued as **httpOnly, SameSite cookies** on `POST /auth/login`,
-`/auth/register`, `/auth/refresh` and `/dev/assume`. The response body also carries the access token,
-which is what a non-browser client uses as `Authorization: Bearer <token>`.
-
 <img alt="" src="https://img.shields.io/badge/hashing-Argon2id-4FD1A5?style=flat-square&labelColor=0D0D10">
 <img alt="" src="https://img.shields.io/badge/refresh-ROTATING,_FAMILY_REVOKED_ON_REUSE-4FD1A5?style=flat-square&labelColor=0D0D10">
 <img alt="" src="https://img.shields.io/badge/impersonation-NONE-FF4A4A?style=flat-square&labelColor=0D0D10">
+
+Access and refresh tokens are issued as **httpOnly, SameSite cookies** on `POST /auth/login`,
+`/auth/register`, `/auth/refresh` and `/dev/assume`. The response body also carries the access token,
+which is what a non-browser client uses as `Authorization: Bearer <token>`.
 
 * Passwords are hashed with **Argon2id**.
 * Refresh tokens rotate on use, and **reuse of a rotated token revokes the whole family** — the
@@ -156,7 +156,7 @@ Twenty-seven typed codes, in the three groups
 > existing class with a `code=` override, because the HTTP status and the envelope shape are already
 > right and only the machine-readable reason differs. A client still branches on `code` alone.
 
-<img alt="" src="https://img.shields.io/badge/generic-6-C6C0B4?style=flat-square&labelColor=0D0D10">
+**Generic** — 6 codes
 
 | code | HTTP | when |
 |:--|:--|:--|
@@ -167,7 +167,7 @@ Twenty-seven typed codes, in the three groups
 | `RATE_LIMITED` | `429` | Token bucket exhausted. `details` carries the window. |
 | `SERVICE_UNAVAILABLE` | `503` | A required dependency is down. |
 
-<img alt="" src="https://img.shields.io/badge/auth_and_tenancy-10-C6C0B4?style=flat-square&labelColor=0D0D10">
+**Auth and tenancy** — 10 codes
 
 | code | HTTP | when |
 |:--|:--|:--|
@@ -190,7 +190,7 @@ Twenty-seven typed codes, in the three groups
 > human, not a **disinterested** one. See
 > [Limitations §7](LIMITATIONS.md#7-three-defects-this-build-found-by-running-itself).
 
-<img alt="" src="https://img.shields.io/badge/domain-11-C6C0B4?style=flat-square&labelColor=0D0D10">
+**Domain** — 11 codes
 
 | code | HTTP | when |
 |:--|:--|:--|

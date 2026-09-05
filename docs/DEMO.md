@@ -73,9 +73,9 @@ three milestones.
 
 | # | milestone | amount | outcome in the recorded run |
 |:--|:--|--:|:--|
-| `01` | Fabric procured | INR 126,000.00 | <img alt="" src="https://img.shields.io/badge/RELEASE-4FD1A5?style=flat-square&labelColor=0D0D10"> auto, at confidence 0.879 |
-| `02` | Production complete | INR 168,000.00 | <img alt="" src="https://img.shields.io/badge/ESCALATE-FFC24B?style=flat-square&labelColor=0D0D10"> then approved by a human |
-| `03` | Delivered &amp; accepted | INR 126,000.00 | <img alt="" src="https://img.shields.io/badge/DISPUTED-FF4A4A?style=flat-square&labelColor=0D0D10"> then settled as a split |
+| `01` | Fabric procured | INR 126,000.00 | `RELEASE` — automatic, at confidence 0.879 |
+| `02` | Production complete | INR 168,000.00 | `ESCALATE` — then approved by a human |
+| `03` | Delivered &amp; accepted | INR 126,000.00 | `DISPUTED` — then settled as a split |
 
 ---
 
