@@ -19,7 +19,7 @@
  */
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import { motion, useScroll, useTransform } from "motion/react";
 
 import { Boot, bootSuppressed } from "@/components/domain/Boot";
@@ -36,9 +36,10 @@ import {
 } from "@/components/ui/editorial";
 import { InvertOnHover } from "@/components/ui/InvertOnHover";
 import { BlurLines, FlipHeadline, Lattice, Reveal } from "@/components/ui/Reveal";
-import { ScrambleGlyphs, SonarArcs, useScramble } from "@/components/ui/ScrambleText";
+import { ScrambleGlyphs, useScramble } from "@/components/ui/ScrambleText";
 import { Button, Capsule, CountUp } from "@/components/ui/primitives";
 import { chipPop, D, E, pick, stagger, ST } from "@/design/motion";
+import { useInfiniteScroll } from "@/hooks/useInfiniteScroll";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { useAsync } from "@/hooks/useAsync";
 import { api } from "@/lib/api";
@@ -85,6 +86,11 @@ export default function LandingPage() {
   const { t, list, locale } = useI18n();
   const { status } = useSession();
   const reduced = useReducedMotion();
+  // Capped rather than truly endless: each pass is a full composition with
+  // its own scroll-linked motion and reveal observers, so an uncapped page
+  // degrades and then hangs. Off entirely under reduced motion, where an
+  // endlessly growing document is disorienting rather than pleasant.
+  const extra = useInfiniteScroll({ max: 6, enabled: !reduced });
   const [booting, setBooting] = useState<boolean | null>(null);
   // The hero is live only once the boot has finished; cues count from there,
   // not from page mount, or they would all have elapsed behind the boot screen.
@@ -244,6 +250,157 @@ export default function LandingPage() {
     tone: tone as MicroRow["tone"],
   }));
 
+  /**
+   * Compositions 03-05, as one source rendered many times.
+   *
+   * 02 and 06 are deliberately not in here. Both own hook state -- a
+   * `usePeerHover` group and the scramble clock -- and a second copy would
+   * share the one instance, so hovering any pass would light up all of them.
+   * These three are pure functions of data already fetched.
+   */
+  const contentPass = (pass_: number) => (
+    <Fragment key={`pass-${pass_}`}>
+        {/* ── 03 / 06 · why a chain at all ─────────────────────────────────── */}
+        <section className="section next-section" id={pass_ === 0 ? "why-chain" : undefined}>
+          <SectionOpener
+            index={3}
+            label={t("hero.whyChainLabel")}
+            lines={[
+              [
+                { text: t("section.c1a"), tone: "muted" },
+                { text: t("section.c1b"), tone: "solid" },
+              ],
+              [
+                { text: t("section.c2a"), tone: "muted" },
+                { text: t("section.c2b"), tone: "solid" },
+              ],
+            ]}
+            lede={t("hero.whyChain")}
+          />
+          <InvertOnHover>
+            <MicroGrid
+              rows={chainRows}
+              columns={[t("section.colWhat"), t("section.colWhere"), t("section.colWhy")]}
+            />
+          </InvertOnHover>
+        </section>
+
+        {/* ── 04 / 06 · the invariants ─────────────────────────────────────── */}
+        <section className="section next-section" id={pass_ === 0 ? "invariants" : undefined}>
+          <SectionOpener
+            index={4}
+            label={t("section.invariantsLabel")}
+            lines={[
+              [
+                { text: t("section.i1a"), tone: "solid" },
+                { text: t("section.i1b"), tone: "muted" },
+              ],
+              [
+                { text: t("section.i2a"), tone: "muted" },
+                { text: t("section.i2b"), tone: "solid" },
+              ],
+            ]}
+            lede={t("section.invariantsLede")}
+          />
+          <InvertOnHover>
+            <MicroGrid
+              rows={invariants}
+              columns={[t("section.colId"), t("section.colInvariant"), t("section.colProof")]}
+            />
+          </InvertOnHover>
+        </section>
+
+        {/* ── 05 / 06 · the measured result ───────────────────────────────── */}
+        <section className="section next-section" id={pass_ === 0 ? "evidence" : undefined}>
+          <SectionOpener
+            index={5}
+            label={t("section.measuredLabel")}
+            lines={[
+              [
+                { text: t("section.m1a"), tone: "solid" },
+                { text: t("section.m1b"), tone: "solid" },
+              ],
+            ]}
+            lede={t("section.measuredLede")}
+          />
+
+          {headline ? (
+            <InvertOnHover>
+            <ProofStrip
+              cells={[
+                { key: "accuracy", label: t("section.accuracy"), text: pct(headline.accuracy, 0) },
+                {
+                  key: "brier",
+                  label: t("section.brier"),
+                  text: headline.brier_score.toFixed(4),
+                },
+                {
+                  key: "prechecks",
+                  label: t("section.prechecks"),
+                  text: pct(headline.resolved_by_prechecks_pct, 1),
+                },
+                {
+                  key: "adversarial",
+                  label: t("section.adversarial"),
+                  text: num(headline.adversarial_bundles),
+                },
+                {
+                  key: "auc",
+                  label: t("section.auc"),
+                  text: headline.risk_test_auc.toFixed(4),
+                },
+                {
+                  key: "cost",
+                  label: t("section.cost"),
+                  text: `₹${headline.cost_inr_per_verification_projected.toFixed(2)}`,
+                },
+              ]}
+            />
+            </InvertOnHover>
+          ) : null}
+
+          {/* The note says where the figures come from; the figure beside it
+              shows the same path as structure, with the real file and route. */}
+          <InvertOnHover>
+            <div className="split">
+              <Reveal index={1}>
+                <p className="prose proof-note">{t("section.measuredNote")}</p>
+              </Reveal>
+              <FigureProvenance
+                note={
+                  evals.status === "ready" && evals.data.available
+                    ? [
+                        evals.data.generated_at
+                          ? t("section.provOn", { date: dateOnly(evals.data.generated_at, locale) })
+                          : null,
+                        evals.data.provider
+                          ? t("section.provScoredBy", {
+                              provider: evals.data.provider.is_live_model
+                                ? t("section.provLive")
+                                : t("section.provOffline"),
+                            })
+                          : null,
+                      ]
+                        .filter(Boolean)
+                        .join(" · ")
+                    : undefined
+                }
+                copy={{
+                  title: t("section.provTitle"),
+                  measured: t("section.provMeasured"),
+                  written: t("section.provWritten"),
+                  served: t("section.provServed"),
+                  read: t("section.provRead"),
+                }}
+              />
+            </div>
+          </InvertOnHover>
+        </section>
+    </Fragment>
+  );
+
+  const contentPassList = Array.from({ length: extra.passes }, (_, n) => contentPass(n + 1));
+
   return (
     <Shell>
       {/* ── 01 / 06 ─────────────────────────────────────────────────────── */}
@@ -255,17 +412,19 @@ export default function LandingPage() {
           <Lattice />
         </motion.div>
 
+        {/* Corner metadata belongs to the *frame*, not to the headline
+            (ui/02 §3), so it is a child of the section rather than of the
+            fading body -- and it is spaced like a section opener's, which is
+            the rhythm the rest of the page already reads in. */}
+        <Reveal variant="blurUp" className="corner-meta hero-corner">
+          <span className="nano">01 / 06</span>
+          <span className="nano">{t("hero.chainLabel")}</span>
+        </Reveal>
+
         <motion.div
           className="hero-body"
           style={reduced ? undefined : { opacity: heroOpacity, scale: heroScale }}
         >
-          <Reveal variant="blurUp">
-            <div className="corner-meta">
-              <span className="nano">01 / 06</span>
-              <span className="nano">{t("hero.chainLabel")}</span>
-            </div>
-          </Reveal>
-
           <motion.div
             style={reduced ? undefined : { y: titleY, letterSpacing: titleTrack }}
           >
@@ -435,142 +594,7 @@ export default function LandingPage() {
         </InvertOnHover>
       </section>
 
-      {/* ── 03 / 06 · why a chain at all ─────────────────────────────────── */}
-      <section className="section next-section" id="why-chain">
-        <SectionOpener
-          index={3}
-          label={t("hero.whyChainLabel")}
-          lines={[
-            [
-              { text: t("section.c1a"), tone: "muted" },
-              { text: t("section.c1b"), tone: "solid" },
-            ],
-            [
-              { text: t("section.c2a"), tone: "muted" },
-              { text: t("section.c2b"), tone: "solid" },
-            ],
-          ]}
-          lede={t("hero.whyChain")}
-        />
-        <InvertOnHover>
-          <MicroGrid
-            rows={chainRows}
-            columns={[t("section.colWhat"), t("section.colWhere"), t("section.colWhy")]}
-          />
-        </InvertOnHover>
-      </section>
-
-      {/* ── 04 / 06 · the invariants ─────────────────────────────────────── */}
-      <section className="section next-section" id="invariants">
-        <SectionOpener
-          index={4}
-          label={t("section.invariantsLabel")}
-          lines={[
-            [
-              { text: t("section.i1a"), tone: "solid" },
-              { text: t("section.i1b"), tone: "muted" },
-            ],
-            [
-              { text: t("section.i2a"), tone: "muted" },
-              { text: t("section.i2b"), tone: "solid" },
-            ],
-          ]}
-          lede={t("section.invariantsLede")}
-        />
-        <InvertOnHover>
-          <MicroGrid
-            rows={invariants}
-            columns={[t("section.colId"), t("section.colInvariant"), t("section.colProof")]}
-          />
-        </InvertOnHover>
-      </section>
-
-      {/* ── 05 / 06 · the measured result ───────────────────────────────── */}
-      <section className="section next-section" id="evidence">
-        <SectionOpener
-          index={5}
-          label={t("section.measuredLabel")}
-          lines={[
-            [
-              { text: t("section.m1a"), tone: "solid" },
-              { text: t("section.m1b"), tone: "solid" },
-            ],
-          ]}
-          lede={t("section.measuredLede")}
-        />
-
-        {headline ? (
-          <InvertOnHover>
-          <ProofStrip
-            cells={[
-              { key: "accuracy", label: t("section.accuracy"), text: pct(headline.accuracy, 0) },
-              {
-                key: "brier",
-                label: t("section.brier"),
-                text: headline.brier_score.toFixed(4),
-              },
-              {
-                key: "prechecks",
-                label: t("section.prechecks"),
-                text: pct(headline.resolved_by_prechecks_pct, 1),
-              },
-              {
-                key: "adversarial",
-                label: t("section.adversarial"),
-                text: num(headline.adversarial_bundles),
-              },
-              {
-                key: "auc",
-                label: t("section.auc"),
-                text: headline.risk_test_auc.toFixed(4),
-              },
-              {
-                key: "cost",
-                label: t("section.cost"),
-                text: `₹${headline.cost_inr_per_verification_projected.toFixed(2)}`,
-              },
-            ]}
-          />
-          </InvertOnHover>
-        ) : null}
-
-        {/* The note says where the figures come from; the figure beside it
-            shows the same path as structure, with the real file and route. */}
-        <InvertOnHover>
-          <div className="split">
-            <Reveal index={1}>
-              <p className="prose proof-note">{t("section.measuredNote")}</p>
-            </Reveal>
-            <FigureProvenance
-              note={
-                evals.status === "ready" && evals.data.available
-                  ? [
-                      evals.data.generated_at
-                        ? t("section.provOn", { date: dateOnly(evals.data.generated_at, locale) })
-                        : null,
-                      evals.data.provider
-                        ? t("section.provScoredBy", {
-                            provider: evals.data.provider.is_live_model
-                              ? t("section.provLive")
-                              : t("section.provOffline"),
-                          })
-                        : null,
-                    ]
-                      .filter(Boolean)
-                      .join(" · ")
-                  : undefined
-              }
-              copy={{
-                title: t("section.provTitle"),
-                measured: t("section.provMeasured"),
-                written: t("section.provWritten"),
-                served: t("section.provServed"),
-                read: t("section.provRead"),
-              }}
-            />
-          </div>
-        </InvertOnHover>
-      </section>
+      {contentPass(0)}
 
       {/* ── 06 / 06 · the closing scramble (reference C1) ────────────────── */}
       <section className="section next-section cta" id="start" {...ctaPeers.group}>
@@ -582,17 +606,18 @@ export default function LandingPage() {
         <p className="micro cta-meta" {...ctaPeers.peer("label")}>
           {t("cta.label")}
         </p>
-        {/* Four nested arcs per side, mirrored, breathing on a stagger. The
-            reference frames the cycling phrase between them, and the motif is
-            reused for the two "listening for a decision" states elsewhere. */}
+        {/* No arcs here. At display scale they sat close enough to the
+            glyphs to read as artefacts behind the type rather than as a frame
+            around it. The motif is not lost -- it still marks the two
+            "listening for a decision" states (the ESCALATE confidence and the
+            review queue) and the 404, where it is inline at body scale and has
+            the room it needs. */}
         <div className="cta-stage">
-          <SonarArcs side="left" />
           <InvertOnHover>
             <div className="cta-line" {...ctaPeers.peer("line")}>
               <ScrambleGlyphs {...scramble} />
             </div>
           </InvertOnHover>
-          <SonarArcs side="right" />
         </div>
         <Link href={status === "signed-in" ? "/deals" : "/register"} data-cursor="">
           <Button>{t("cta.start")}</Button>
@@ -601,6 +626,19 @@ export default function LandingPage() {
           {t("cta.footnote")}
         </span>
       </section>
+
+      {/* The page keeps going for anyone who keeps scrolling. It is placed after
+          the call to action, not before it: appending above would push the one
+          thing the page is asking for further away with every pass. */}
+      {extra.passes > 0 ? contentPassList : null}
+
+      {/* Watched by `useInfiniteScroll`; `rootMargin` means it is seen well
+          before it is reached, so the next pass is already in the DOM. */}
+      <div ref={extra.sentinel} className="infinite-sentinel" aria-hidden />
+
+      {extra.exhausted ? (
+        <p className="nano infinite-end">{t("cta.footnote")}</p>
+      ) : null}
     </Shell>
   );
 }

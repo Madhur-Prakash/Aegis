@@ -1571,6 +1571,23 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  /* The sizing container for the line inside it. */
+  container-type: inline-size;
+}
+
+/* Where the stage still carries arcs -- the 404 -- reserve them as real space
+   so the type can never run underneath: an arc is `clamp(48px,7vw,84px)` wide
+   at a `clamp(.5rem,4vw,4rem)` offset. Container query units resolve against
+   the content box, so the line below simply fills what is left. */
+.cta-stage:has(.sonar) {
+  padding-inline: calc(clamp(0.5rem, 4vw, 4rem) + clamp(48px, 7vw, 84px) + var(--sp-4));
+}
+
+@media (max-width: 767px) {
+  /* The arcs are dropped at this width (ui/05 §5); the space returns to the line. */
+  .cta-stage:has(.sonar) {
+    padding-inline: 0;
+  }
 }
 
 /* ── The 404, which is the CTA component reused (ui/06 §7) ──────────────── */
@@ -1621,7 +1638,33 @@
 .cta-line .sc-line,
 .notfound-line .sc-line {
   display: inline-block;
-  font-size: min(1em, calc(92vw / (var(--sc-slots, 13) * var(--sc-slot-n))));
+  /* A fixed-slot line exists so that it cannot reflow; wrapping is the one
+     failure it must be structurally incapable of. */
+  white-space: nowrap;
+  /* Container width, not viewport width. `92vw` is 1509px at a 1640 viewport
+     while the line actually lives in the 1296px content column, so the longest
+     phrase overflowed and `SEE THE PROOF` dropped its F onto a second line.
+     `cqw` measures the stage the line is really in. */
+  font-size: min(1em, calc(100cqw / (var(--sc-slots, 13) * var(--sc-slot-n))));
+}
+
+/* ── Infinite scroll (hooks/useInfiniteScroll.ts) ────────────────────────────
+   The sentinel is a measuring device, not a visual: it needs height so the
+   observer has a box to intersect, and nothing else. Zero-height elements are
+   reported as intersecting immediately in some engines, which would append
+   every pass at once. */
+.infinite-sentinel {
+  height: 1px;
+  width: 100%;
+  pointer-events: none;
+}
+
+/* Where it stops. Saying so is better than a page that simply goes quiet and
+   leaves the reader scrolling into nothing. */
+.infinite-end {
+  padding-block: var(--sp-6);
+  text-align: center;
+  color: var(--fg-micro);
 }
 
 @keyframes sonar {
@@ -2382,6 +2425,25 @@
 .cta-corner {
   position: absolute;
   inset: var(--sp-6) var(--gutter) auto;
+}
+
+/* The hero's sits in the flow instead, exactly like a section opener's
+   (`.opener` is the same flex column at the same `--sp-5`). Pinning it to the
+   frame made the gap depend on the viewport height -- 62px at 900px tall, 12px
+   at 700px, and overlapping below that -- because the hero centres its content
+   and the headline grows upward into a label that is not moving. In the flow
+   the distance is the same at every height.
+
+   It is a direct child of `.hero`, not of `.hero-body`, so the scroll-linked
+   fade on the hero content does not take the frame's own metadata with it. */
+.hero-corner {
+  position: relative;
+  z-index: 1;
+  /* `display-1` sets `line-height: .86`, so its cap ink starts about 0.18em
+     above the line box. Without this the 24px flex gap reads as roughly 12px
+     against type this large, which is what made the label look attached to the
+     headline rather than to the frame. */
+  margin-bottom: calc(var(--fs-display-1) * 0.06);
 }
 
 /* ── Footer as a composition (reference D4) ─────────────────────────────── */
