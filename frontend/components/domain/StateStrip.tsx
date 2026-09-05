@@ -12,6 +12,7 @@
  * a display-only invention.
  */
 
+import { ArrowRight, CornerDownRight } from "lucide-react";
 import { motion } from "motion/react";
 
 import { SPRING } from "@/design/motion";
@@ -60,7 +61,7 @@ export function StateStrip({ state }: { state: string }) {
             {node(name, index)}
             {index < SPINE.length - 1 ? (
               <span className="state-sep" aria-hidden>
-                →
+                <ArrowRight size={12} strokeWidth={2} />
               </span>
             ) : null}
           </span>
@@ -68,13 +69,13 @@ export function StateStrip({ state }: { state: string }) {
       </div>
       <div className="states">
         <span className="state-sep" aria-hidden>
-          ↳
+          <CornerDownRight size={12} strokeWidth={2} />
         </span>
         {BRANCH.map((name, index) => node(name, SPINE.length + index))}
       </div>
       <div className="states">
         <span className="state-sep" aria-hidden>
-          ↳
+          <CornerDownRight size={12} strokeWidth={2} />
         </span>
         {node(TERMINAL, ORDER.length - 1)}
       </div>

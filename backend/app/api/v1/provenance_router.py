@@ -8,12 +8,12 @@ from typing import Any
 from fastapi import APIRouter
 from sqlalchemy import select
 
-from app.api.v1.schemas import AttestationOut, ClauseVerdictOut
+from app.api.v1.schemas import AttestationOut, ClauseVerdictOut, TamperCheckIn
 from app.attest.canonical import payload_hash, sha256_hex
 from app.attest.eip712 import verify_signature
 from app.chain.adapter import get_chain
 from app.common.deps import RepoDep, SessionDep, ViewerDep
-from app.common.errors import NotFound
+from app.common.errors import NotFound, ValidationFailed
 from app.config.settings import settings
 from app.ledger.service import replay_balances, verify_chain
 from app.models.commerce import Artifact, Attestation, ChainAnchor, Payout
@@ -280,13 +280,20 @@ async def ledger_verify(deal_id: uuid.UUID, repo: RepoDep, session: SessionDep) 
 
 
 @router.post("/provenance/tamper-check", response_model=dict)
-async def tamper_check(payload: dict[str, Any]) -> dict[str, Any]:
+async def tamper_check(payload: TamperCheckIn) -> dict[str, Any]:
     """Recomputes a hash over supplied bytes.  The UI's ``TAMPER ONE BYTE`` button
     flips a byte in a local copy and calls this, so the failure is real."""
     import base64
+    import binascii
 
-    raw = base64.b64decode(payload.get("content_b64", ""))
-    expected = str(payload.get("expected_sha256", "")).removeprefix("0x")
+    try:
+        raw = base64.b64decode(payload.content_b64, validate=True)
+    except (binascii.Error, ValueError) as exc:
+        raise ValidationFailed(
+            code="CONTENT_NOT_BASE64",
+            message="`content_b64` is not valid base64.",
+        ) from exc
+    expected = payload.expected_sha256.removeprefix("0x")
     actual = sha256_hex(raw)
     return {
         "expected_sha256": expected,

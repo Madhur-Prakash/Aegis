@@ -19,6 +19,7 @@
  * in red -- the only place in the product where red means "stop".
  */
 
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { motion, useAnimationControls } from "motion/react";
 import { useCallback, useEffect, useState } from "react";
 
@@ -187,7 +188,13 @@ export function MerklePanel({ artifacts, root }: { artifacts: Artifact[]; root: 
             ) : (
               proof.proof.proof.map((step, index) => (
                 <span key={`${step.position}-${step.hash}`}>
-                  {index + 1}. {step.position === "left" ? "◀" : "▶"} {step.hash.slice(0, 12)}…
+                  {index + 1}.{" "}
+                  {step.position === "left" ? (
+                    <ChevronLeft className="ico" size={12} strokeWidth={2} aria-hidden />
+                  ) : (
+                    <ChevronRight className="ico" size={12} strokeWidth={2} aria-hidden />
+                  )}{" "}
+                  {step.hash.slice(0, 12)}…
                 </span>
               ))
             )}

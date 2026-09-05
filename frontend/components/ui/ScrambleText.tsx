@@ -53,14 +53,21 @@ type Props = {
   active?: boolean;
 };
 
-export function ScrambleText({
+/**
+ * The scramble as a hook: the state machine without the markup.
+ *
+ * It exists so the closing line can sit under the magnifying lens. The lens
+ * renders its children twice, and two `ScrambleText`s would scramble to two
+ * clocks -- the glyphs inside the disc would never match the ones beside it.
+ * With the state owned once, every copy renders the same `chars`.
+ */
+export function useScramble({
   phrases,
   mode = "cycle",
   holdMs = 2600,
   swapMs = 720,
-  className,
   active = true,
-}: Props) {
+}: Omit<Props, "className">) {
   const reduced = useReducedMotion();
   const [idx, setIdx] = useState(0);
   const target = phrases[idx] ?? phrases[0] ?? "";
@@ -147,6 +154,24 @@ export function ScrambleText({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [idx, reduced, active, mode, target, width, swapMs, holdMs, phrases.length]);
 
+  return { chars, target, width };
+}
+
+/**
+ * The glyph slots for a scramble state. Pure: render it as many times as you
+ * like from one `useScramble`, and every copy agrees.
+ */
+export function ScrambleGlyphs({
+  chars,
+  target,
+  width,
+  className,
+}: {
+  chars: string[];
+  target: string;
+  width: number;
+  className?: string;
+}) {
   return (
     <span className={className} aria-label={target} role="text">
       {chars.map((c, i) => (
@@ -166,6 +191,12 @@ export function ScrambleText({
       ))}
     </span>
   );
+}
+
+/** The original component, unchanged for its callers: one hook, one render. */
+export function ScrambleText({ className, ...options }: Props) {
+  const state = useScramble(options);
+  return <ScrambleGlyphs {...state} className={className} />;
 }
 
 /**

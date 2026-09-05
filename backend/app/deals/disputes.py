@@ -77,6 +77,7 @@ async def human_review(
     reason: str,
     user_id: uuid.UUID,
     actor: str,
+    acting_org_id: uuid.UUID,
 ) -> dict[str, Any]:
     reason = _require_reason(reason)
     if milestone.state != MilestoneState.UNDER_HUMAN_REVIEW:
@@ -87,6 +88,22 @@ async def human_review(
         )
     attestation = await _latest_attestation(session, milestone.id)
     action = HumanAction(str(action))
+
+    # An APPROVE releases escrowed money to the seller, so the seller cannot be
+    # the one who signs it off.  The milestone is visible to both parties -- an
+    # admin of the *selling* organization could otherwise submit deliberately
+    # ambiguous evidence, wait for the verifier to ESCALATE, and then approve
+    # their own release with no involvement from the buyer at all.  That is the
+    # dishonest-seller path this product exists to close, and I3's guard does
+    # not close it: `authorize_release` accepts any ESCALATE from a human.
+    # A REJECT moves no money and sends the milestone back for resubmission, so
+    # either party may take it.
+    if action == HumanAction.APPROVE and acting_org_id != deal.org_id_buyer:
+        raise Forbidden(
+            code="ONLY_BUYER_APPROVES_RELEASE",
+            message="Only the buyer organization can approve a release of escrowed funds.",
+            details={"milestone_id": str(milestone.id)},
+        )
 
     await append_ledger(
         session,
@@ -376,10 +393,28 @@ async def resolve_dispute(
     user_id: uuid.UUID,
     actor: str,
     membership_can_approve: bool,
+    acting_org_id: uuid.UUID,
 ) -> dict[str, Any]:
     """The human decision.  I8: this is the only path that can settle a dispute."""
     if not membership_can_approve:
         raise Forbidden(details={"required_role": "ADMIN"})
+
+    # A resolution that releases anything pays the seller, so the seller cannot
+    # be the one taking it.  `REJECTED` is a disputable state, which made this
+    # the shortest route around the whole verifier: submit evidence, have it
+    # rejected, raise a dispute on your own milestone, and resolve it in your own
+    # favour with your own admin.  I8 is satisfied throughout -- `human_decided_by`
+    # is set -- because I8 only requires *a* human, not a disinterested one.
+    #
+    # A resolution that releases nothing is a seller conceding, which pays them
+    # nothing and so is not the self-dealing being refused.
+    if int(release_paise) > 0 and acting_org_id != deal.org_id_buyer:
+        raise Forbidden(
+            code="ONLY_BUYER_APPROVES_RELEASE",
+            message="Only the buyer organization can resolve a dispute in the seller's favour.",
+            details={"dispute_id": str(dispute.id)},
+        )
+
     reason = _require_reason(reason)
     amount = int(milestone.amount_paise)
     if not split_balances(amount, int(release_paise), int(refund_paise)):

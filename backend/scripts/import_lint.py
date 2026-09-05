@@ -5,7 +5,12 @@ import ``app.settlement.engine``, ``app.rails`` or ``app.payments``, and nothing
 under those money-moving packages may import ``app.agents``.
 
 The check is an AST walk, not a grep, so it sees ``from x import y``,
-``import x.y``, aliased imports and function-local imports alike.
+``import x.y``, aliased imports and function-local imports alike.  It also
+resolves **relative** imports to their absolute names -- ``from ...settlement.engine
+import authorize_release`` inside ``app/agents/verifier/`` is exactly the thing
+this lint exists to refuse -- and it treats ``importlib.import_module`` and
+``__import__`` as imports, including refusing a module name that is built at
+runtime and therefore cannot be checked at all.
 
     python -m scripts.import_lint          # exit 1 on violation
     python -m scripts.import_lint --json
@@ -59,23 +64,80 @@ class Violation:
         return f"{self.file}:{self.line}  imports {self.imported}  [{self.rule}]"
 
 
-def _module_names(tree: ast.AST) -> list[tuple[int, str]]:
+def _package_of(relative: str) -> str:
+    """``app/agents/verifier/pipeline.py`` -> ``app.agents.verifier``."""
+    return ".".join(relative.split("/")[:-1])
+
+
+def _absolutise(package: str, level: int, module: str) -> str:
+    """Resolve a relative import to its absolute dotted name.
+
+    ``from ...settlement.engine import authorize_release`` inside
+    ``app/agents/verifier/pipeline.py`` is ``app.settlement.engine``.  The scanner
+    used to skip every relative import on the grounds that one "cannot cross a
+    package boundary here", which is simply not true: three dots from
+    ``app.agents.verifier`` lands on ``app``, and everything under it is in reach.
+    That was a hole straight through I2 -- the one invariant whose entire value is
+    that it cannot be talked around.
+    """
+    parts = package.split(".") if package else []
+    if level > len(parts):
+        return module or ""
+    base = parts[: len(parts) - (level - 1)]
+    tail = module.split(".") if module else []
+    return ".".join([*base, *tail])
+
+
+# ``importlib.import_module("app.rails.base")`` is an import that the AST's
+# ``Import`` nodes never see, and a lint that can be stepped around with one
+# stdlib call is decoration.  Anything that resolves a module from a string is
+# read as an import of whichever constant it is handed.  A *computed* name gets
+# this marker, which matches every rule: a module name the lint cannot read is
+# not a module name the lint can clear, and I2's whole value is that the boundary
+# is decidable by looking.
+_COMPUTED = "<computed module name>"
+
+_DYNAMIC_IMPORT_CALLS: frozenset[str] = frozenset(
+    {"import_module", "__import__", "find_spec", "module_from_spec", "spec_from_file_location"}
+)
+
+
+def _called_name(node: ast.Call) -> str:
+    func = node.func
+    if isinstance(func, ast.Name):
+        return func.id
+    if isinstance(func, ast.Attribute):
+        return func.attr
+    return ""
+
+
+def _imported_modules(tree: ast.AST, package: str) -> list[tuple[int, str]]:
+    """Every module this file pulls in: static, relative and dynamic alike."""
     found: list[tuple[int, str]] = []
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
             for alias in node.names:
                 found.append((node.lineno, alias.name))
         elif isinstance(node, ast.ImportFrom):
-            if node.level:  # a relative import cannot cross a package boundary here
-                continue
             base = node.module or ""
-            found.append((node.lineno, base))
+            if node.level:
+                base = _absolutise(package, node.level, base)
+            if base:
+                found.append((node.lineno, base))
             for alias in node.names:
                 found.append((node.lineno, f"{base}.{alias.name}" if base else alias.name))
+        elif isinstance(node, ast.Call) and _called_name(node) in _DYNAMIC_IMPORT_CALLS:
+            for argument in [*node.args, *(kw.value for kw in node.keywords)]:
+                if isinstance(argument, ast.Constant) and isinstance(argument.value, str):
+                    found.append((node.lineno, argument.value))
+                elif not isinstance(argument, ast.Constant):
+                    found.append((node.lineno, _COMPUTED))
     return found
 
 
 def _matches(imported: str, forbidden: str) -> bool:
+    if imported == _COMPUTED:
+        return True
     return imported == forbidden or imported.startswith(forbidden + ".")
 
 
@@ -96,10 +158,11 @@ def scan(root: Path = APP) -> list[Violation]:
             continue
         rules = FORBIDDEN_FROM_AGENTS if in_agents else FORBIDDEN_FROM_MONEY
         rule_name = "I2/agents-may-not-move-money" if in_agents else "I2/money-may-not-call-agents"
-        for line, imported in _module_names(tree):
+        for line, imported in _imported_modules(tree, _package_of(relative)):
             for forbidden in rules:
                 if _matches(imported, forbidden):
                     violations.append(Violation(relative, line, imported, rule_name))
+                    break
     return violations
 
 

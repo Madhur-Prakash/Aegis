@@ -56,6 +56,7 @@ async def human_review(
         reason=payload.reason,
         user_id=membership.user.id,
         actor=f"USER:{membership.user.id}",
+        acting_org_id=membership.org_id,
     )
     await session.commit()
     for org in (deal.org_id_buyer, deal.org_id_seller):
@@ -162,6 +163,7 @@ async def resolve(
         user_id=membership.user.id,
         actor=f"USER:{membership.user.id}",
         membership_can_approve=membership.at_least(OrgRole.ADMIN),
+        acting_org_id=membership.org_id,
     )
     await session.commit()
     for org in (deal.org_id_buyer, deal.org_id_seller):

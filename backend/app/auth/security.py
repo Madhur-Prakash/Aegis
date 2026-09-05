@@ -60,6 +60,34 @@ def verify_password(password_hash: str, password: str) -> bool:
         return False
 
 
+# Argon2id at 64 MiB and t=3 takes tens of milliseconds, which is the whole
+# point of it -- and also a clock anyone can read.  Returning `InvalidCredentials`
+# without hashing anything when the account does not exist made "no such account"
+# and "wrong password" trivially distinguishable by response time, whatever the
+# response body said.  `dummy_verify` burns the same work against a real hash so
+# the two paths cost the same.
+# secret-scan-allow: not a credential -- a throwaway string hashed at runtime so
+# a login for a non-existent account costs the same as one for a real account.
+_DUMMY_PASSWORD = "aegis-timing-equaliser"
+_dummy_hash: str | None = None
+
+
+def dummy_verify() -> None:
+    """Spend one password verification against a throwaway hash.
+
+    Built on first use rather than at import: an Argon2id hash at 64 MiB is tens
+    of milliseconds, and every process in the system -- API, worker, each script
+    -- imports this module.
+    """
+    global _dummy_hash
+    if _dummy_hash is None:
+        _dummy_hash = _hasher.hash(_DUMMY_PASSWORD)
+    try:
+        _hasher.verify(_dummy_hash, "")
+    except Exception:
+        return
+
+
 def needs_rehash(password_hash: str) -> bool:
     try:
         return _hasher.check_needs_rehash(password_hash)

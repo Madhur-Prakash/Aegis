@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.security import (
     create_access_token,
+    dummy_verify,
     hash_password,
     hash_token,
     normalize_email,
@@ -178,8 +179,15 @@ async def login(session: AsyncSession, *, email: str, password: str) -> tuple[Us
     user = (
         await session.execute(select(User).where(User.email_normalized == normalized))
     ).scalar_one_or_none()
-    # Identical failure regardless of whether the account exists.
-    if user is None or not verify_password(user.password_hash, password):
+    # Identical failure regardless of whether the account exists -- in the body
+    # *and* on the clock.  Skipping the hash when there is no account made the
+    # two cases tens of milliseconds apart, which is a perfectly usable
+    # enumeration oracle no matter how carefully the message is worded.
+    if user is None:
+        dummy_verify()
+        log.warning("auth login", extra={"decision": "rejected", "reason": "bad_credentials"})
+        raise InvalidCredentials()
+    if not verify_password(user.password_hash, password):
         log.warning("auth login", extra={"decision": "rejected", "reason": "bad_credentials"})
         raise InvalidCredentials()
     if user.status != UserStatus.ACTIVE:
@@ -243,6 +251,17 @@ async def logout(session: AsyncSession, raw_refresh: str | None, user_id: uuid.U
                 select(RefreshToken).where(RefreshToken.token_hash == hash_token(raw_refresh))
             )
         ).scalar_one_or_none()
+        # The cookie must belong to the caller.  Without the ownership test a
+        # signed-in user could present somebody else's refresh token and sign
+        # *them* out, while their own session stayed alive -- and the caller's
+        # own sessions would be left untouched, which is not what "log out"
+        # means.  A foreign token falls through to revoking the caller's own.
+        if row is not None and row.user_id != user_id:
+            log.warning(
+                "auth logout",
+                extra={"user_id": str(user_id), "decision": "foreign_refresh_token_ignored"},
+            )
+            row = None
         if row is not None:
             await session.execute(
                 update(RefreshToken)

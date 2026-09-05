@@ -445,6 +445,7 @@ async def run_demo(reference: str) -> dict[str, Any]:
                 ),
                 user_id=buyer_user_id,
                 actor="HUMAN:buyer-owner",
+                acting_org_id=deal.org_id_buyer,
             )
             await session.commit()
             beat("Human", "APPROVE with written reason", amount=inr(result["amount_paise"]))
@@ -564,6 +565,7 @@ async def run_demo(reference: str) -> dict[str, Any]:
                 user_id=buyer_user_id,
                 actor="HUMAN:buyer-owner",
                 membership_can_approve=True,
+                acting_org_id=deal.org_id_buyer,
             )
             await session.commit()
             beat(

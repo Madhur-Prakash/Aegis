@@ -225,6 +225,7 @@ async def test_a_human_can_approve_an_escalation_and_it_is_recorded(parties):
             reason="Counted 500 units against the packing list on site.",
             user_id=parties["buyer_user_id"],
             actor=f"USER:{parties['buyer_user_id']}",
+            acting_org_id=parties["buyer_org_id"],
         )
         await session.commit()
         assert result["authorized"] is True
@@ -288,6 +289,7 @@ async def test_a_human_approval_requires_a_written_reason(parties):
                 reason="ok",
                 user_id=parties["buyer_user_id"],
                 actor="test",
+                acting_org_id=parties["buyer_org_id"],
             )
         assert exc.value.code == "REASON_REQUIRED"
 
@@ -333,6 +335,7 @@ async def test_the_full_three_milestone_narrative_reconciles(parties):
             reason="Counted on site against the carton manifest.",
             user_id=parties["buyer_user_id"],
             actor="test",
+            acting_org_id=parties["buyer_org_id"],
         )
         await session.commit()
         await drain_outbox(session)
@@ -388,6 +391,7 @@ async def test_the_full_three_milestone_narrative_reconciles(parties):
             user_id=parties["buyer_user_id"],
             actor="test",
             membership_can_approve=True,
+            acting_org_id=parties["buyer_org_id"],
         )
         await session.commit()
         await drain_outbox(session)
@@ -495,6 +499,7 @@ async def test_a_dispute_split_that_does_not_balance_is_refused(parties):
                 user_id=parties["buyer_user_id"],
                 actor="test",
                 membership_can_approve=True,
+                acting_org_id=parties["buyer_org_id"],
             )
         assert exc.value.code == "SPLIT_DOES_NOT_BALANCE"
 

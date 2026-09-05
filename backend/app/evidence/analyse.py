@@ -23,6 +23,18 @@ from app.common.logging import get_logger
 
 log = get_logger("evidence.analyse")
 
+# Decompression-bomb ceilings.  Both formats let a small upload expand into an
+# enormous amount of work, so the 20 MB size cap on the *file* says very little
+# about the cost of reading it.
+#
+# A 40-megapixel photograph is already far beyond anything a phone produces for a
+# packing shot, while Pillow's own default only *warns* at 89 MP and does not
+# raise until twice that -- by which point ~500 MB has been allocated for the RGB
+# buffer alone, before `convert`, `FIND_EDGES` and `resize` each want their own.
+# A PNG that decompresses to that is a few tens of kilobytes on the wire.
+MAX_IMAGE_PIXELS = 40_000_000
+MAX_PDF_PAGES = 250
+
 
 @dataclass(slots=True)
 class Observation:
@@ -89,11 +101,18 @@ def analyse_pdf(data: bytes) -> Observation:
         reader = PdfReader(io.BytesIO(data))
         obs.page_count = len(reader.pages)
         pages = []
-        for page in reader.pages:
+        # Text extraction is the expensive half, and page count is not bounded by
+        # file size: a 20 MB PDF can declare tens of thousands of pages of
+        # compressed content streams.  An invoice or a packing list is a handful
+        # of pages, so read the first MAX_PDF_PAGES and say so rather than
+        # handing an uploader an unbounded amount of the worker's CPU.
+        for page in reader.pages[:MAX_PDF_PAGES]:
             try:
                 pages.append(page.extract_text() or "")
             except Exception:
                 pages.append("")
+        if obs.page_count > MAX_PDF_PAGES:
+            obs.notes.append(f"only the first {MAX_PDF_PAGES} of {obs.page_count} pages were read")
         obs.text = "\n".join(pages).strip()
         obs.parseable = bool(obs.text)
         if not obs.parseable:
@@ -225,7 +244,17 @@ def analyse_image(data: bytes) -> Observation:
     try:
         from PIL import Image, ImageFilter, ImageStat
 
+        # Pillow's own guard warns before it raises, and raises only at twice
+        # this; refuse on the header instead, before a single pixel is decoded.
+        Image.MAX_IMAGE_PIXELS = MAX_IMAGE_PIXELS
         with Image.open(io.BytesIO(data)) as img:
+            width, height = img.size
+            if width * height > MAX_IMAGE_PIXELS:
+                obs.notes.append(
+                    f"image is {width}x{height}, beyond the {MAX_IMAGE_PIXELS:,}-pixel "
+                    "budget, and was not decoded"
+                )
+                return obs
             img.load()
             rgb = img.convert("RGB")
             width, height = rgb.size

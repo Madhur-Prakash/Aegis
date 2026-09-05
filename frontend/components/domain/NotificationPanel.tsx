@@ -2,6 +2,7 @@
 
 /** Right-docked panel.  Unread rows carry a 4px amber left border, grouped by day. */
 
+import { X } from "lucide-react";
 import { motion } from "motion/react";
 import { useCallback, useEffect, useState } from "react";
 
@@ -66,7 +67,7 @@ export function NotificationPanel({ onClose }: { onClose: () => void }) {
             {t("notifications.markRead")}
           </Button>
           <button className="icon-btn" onClick={onClose} aria-label={t("common.close")}>
-            <span aria-hidden>✕</span>
+            <X size={18} strokeWidth={1.75} aria-hidden />
           </button>
         </div>
       </header>

@@ -431,148 +431,87 @@
   inset: auto auto 0 0;
 }
 
-.boot-mark {
-  width: 28px;
-  height: 28px;
+/* The boot glyph: the mark assembling itself. Sized to the viewport so it is
+   an object on the screen, not an icon in it. */
+.boot-glyph {
+  width: clamp(132px, 18vw, 184px);
+  height: auto;
+  overflow: visible;
 }
 
-.boot-track {
-  position: relative;
-  width: min(560px, 72vw);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+/* A faint halo breathing behind the ring: the one continuously-moving thing
+   while the checks run, so the screen never reads as stalled. */
+.boot-halo {
+  fill: none;
+  stroke: var(--line-1);
+  stroke-width: 0.6;
+  transform-origin: 50% 50%;
+  transform-box: fill-box;
+  animation: boot-halo calc(var(--d-hero) * 3) ease-in-out infinite alternate;
 }
 
-.boot-track::before {
-  content: "";
-  position: absolute;
-  inset: 50% 0 auto 0;
-  height: 1px;
-  background: var(--line-1);
-}
-
-/* The rail runs centre-to-centre between the first and last station (each is
-   28px), so a fill of k/3 ends exactly on station k instead of 14px short of
-   it. The fill and the head both live in this box. */
-.boot-rail {
-  position: absolute;
-  top: 50%;
-  left: 14px;
-  right: 14px;
-  height: 0;
-}
-
-.boot-fill {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 1px;
-  background: var(--sig-pass);
-  transform-origin: 0% 50%;
-}
-
-/* The head: a dot at the leading edge of the line, breathing while it moves.
-   Its `left` is animated by Framer as a percentage of the rail. */
-.boot-head {
-  position: absolute;
-  top: 0;
-  width: 6px;
-  height: 6px;
-  margin: -3px 0 0 -3px;
-  border-radius: var(--r-full);
-  background: var(--sig-pass);
-  animation: boot-breathe var(--d-slow) ease-in-out infinite alternate;
-}
-
-@keyframes boot-breathe {
+@keyframes boot-halo {
   from {
-    box-shadow: 0 0 0 3px var(--sig-pass-tint);
+    transform: scale(0.96);
+    opacity: 0.45;
   }
   to {
-    box-shadow: 0 0 0 9px var(--sig-pass-tint);
+    transform: scale(1.04);
+    opacity: 1;
   }
 }
 
-/* A station rings once as the line reaches it, in whatever colour its state
-   gave it -- green, amber or red -- so the ring never claims a state the
-   check did not report. */
-.boot-node[data-reached="true"] {
-  background: var(--ink-700);
+.boot-ring-base {
+  fill: none;
+  stroke: var(--line-1);
+  stroke-width: 1;
 }
 
-.boot-node[data-reached="true"]::after {
-  content: "";
-  position: absolute;
-  inset: -1px;
-  border-radius: inherit;
-  border: 1px solid currentColor;
-  pointer-events: none;
-  animation: boot-ring var(--d-slow) ease-out 1 both;
+/* Each arc and its joint take the colour its check reported -- and only that.
+   Pending is a neutral, so an arc never claims a state before it has one. */
+.boot-arc {
+  fill: none;
+  stroke: var(--line-2);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  transition: stroke var(--d-base) ease;
 }
 
-@keyframes boot-ring {
-  from {
-    transform: scale(1);
-    opacity: 0.8;
-  }
-  to {
-    transform: scale(2.2);
-    opacity: 0;
-  }
+.boot-joint {
+  fill: var(--line-2);
+  transition: fill var(--d-base) ease;
+}
+
+.boot-arc[data-state="ready"] {
+  stroke: var(--sig-pass);
+}
+.boot-joint[data-state="ready"] {
+  fill: var(--sig-pass);
+}
+.boot-arc[data-state="degraded"] {
+  stroke: var(--sig-unverified);
+}
+.boot-joint[data-state="degraded"] {
+  fill: var(--sig-unverified);
+}
+.boot-arc[data-state="failed"] {
+  stroke: var(--sig-fail);
+}
+.boot-joint[data-state="failed"] {
+  fill: var(--sig-fail);
+}
+
+.boot-tick {
+  fill: none;
+  stroke: var(--fg-display);
+  stroke-width: 3.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .boot-head,
-  .boot-node[data-reached="true"]::after {
+  .boot-halo {
     animation: none;
-  }
-}
-
-.boot-node {
-  position: relative;
-  width: 28px;
-  height: 28px;
-  border-radius: var(--r-full);
-  background: var(--ink-800);
-  border: 1px solid var(--line-2);
-  display: grid;
-  place-items: center;
-  font: 500 var(--fs-micro) / 1 var(--font-mono);
-  color: var(--fg-micro);
-  transition:
-    border-color var(--d-base) ease,
-    color var(--d-base) ease;
-}
-
-.boot-node[data-state="ready"] {
-  border-color: var(--sig-pass);
-  color: var(--sig-pass);
-}
-.boot-node[data-state="degraded"] {
-  border-color: var(--sig-unverified);
-  color: var(--sig-unverified);
-}
-.boot-node[data-state="failed"] {
-  border-color: var(--sig-fail);
-  color: var(--sig-fail);
-}
-
-.boot-node-label {
-  position: absolute;
-  top: calc(100% + var(--sp-2));
-  left: 50%;
-  transform: translateX(-50%);
-  white-space: nowrap;
-}
-
-@media (max-width: 767px) {
-  .boot-track {
-    width: 84vw;
-  }
-  .boot-node-label {
-    display: none;
   }
 }
 
@@ -757,10 +696,15 @@
 .capsule:hover {
   background: var(--white);
 }
-.capsule-dot {
-  width: 0.6em;
-  height: 0.6em;
-  border-radius: var(--r-full);
+.capsule-icon {
+  flex: none;
+}
+
+/* An icon set in running text sits on the baseline like a glyph would. */
+.ico {
+  display: inline-block;
+  vertical-align: -0.15em;
+  flex: none;
 }
 
 .icon-btn {
@@ -1919,6 +1863,232 @@
     grid-column: 1 / -1;
     text-align: left;
   }
+}
+
+/* ── Two-column editorial split ────────────────────────────────────── */
+/* Text on the left, an object on the right. The right column was empty before,
+   which read as an accident: it is as wide as the text and it has a job. */
+.split {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--grid-gap);
+  align-items: start;
+}
+
+.stack-tight {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+@media (max-width: 1023px) {
+  .split {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── The decision scale ────────────────────────────────────────────── */
+.scale {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  margin: 0;
+}
+
+.scale-body {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--sp-6);
+  align-items: stretch;
+}
+
+/* The rail: 0 at the bottom, 1 at the top; bands hang off its left edge. */
+.scale-rail {
+  position: relative;
+  width: 14rem;
+  height: clamp(280px, 36vh, 360px);
+}
+
+.scale-line {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 1px;
+  background: var(--fg-display);
+  transform-origin: 50% 100%;
+}
+
+/* The three verdict classes in their own hues: the band is the verdict. */
+.scale-band {
+  position: absolute;
+  left: 0;
+  width: 2.75rem;
+  border-top: var(--hairline);
+}
+
+.scale-band--release {
+  background: var(--sig-pass-tint);
+}
+.scale-band--escalate {
+  background: var(--sig-unverified-tint);
+}
+.scale-band--reject {
+  background: var(--sig-fail-tint);
+}
+
+.scale-tick {
+  position: absolute;
+  left: 3.25rem;
+  transform: translateY(-50%);
+  white-space: nowrap;
+}
+
+.scale-tick--mid {
+  color: var(--sig-unverified);
+}
+
+/* The quoted verdict's confidence: a point on the rail with a ring. */
+.scale-point {
+  position: absolute;
+  left: 0;
+  width: 10px;
+  height: 10px;
+  margin: -5px 0 0 -4.5px;
+  border-radius: var(--r-full);
+  background: var(--fg-display);
+  box-shadow:
+    0 0 0 4px var(--bg),
+    0 0 0 5px var(--fg-display);
+}
+
+.scale-read {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: var(--sp-5);
+}
+
+/* The oversized numeral: the one figure in the section, at display scale, in
+   the mono the rest of the data wears. */
+.scale-num {
+  font: 500 var(--fs-display-2) / 0.9 var(--font-mono);
+  letter-spacing: var(--tr-display-2);
+  color: var(--fg-display);
+}
+
+.scale-human {
+  color: var(--sig-unverified);
+}
+
+.scale-rule {
+  margin: 0;
+  max-width: 34ch;
+  color: var(--fg-secondary);
+}
+
+/* Inside the lens the numeral and the line are ink; the bands keep their hues
+   -- they are data -- and the point keeps its ring in the disc's colours. */
+.invert-layer .scale-num {
+  color: var(--disc-ink);
+}
+.invert-layer .scale-line {
+  background: var(--disc-ink);
+}
+.invert-layer .scale-point {
+  background: var(--disc-ink);
+  box-shadow:
+    0 0 0 4px var(--disc-ground),
+    0 0 0 5px var(--disc-ink);
+}
+
+@media (max-width: 1023px) {
+  .scale-rail {
+    height: 240px;
+  }
+}
+
+/* ── Where a figure comes from ──────────────────────────────────────── */
+.prov {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  margin: 0;
+}
+
+.prov-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  border-left: var(--hairline);
+}
+
+.prov-station {
+  position: relative;
+}
+
+.prov-row {
+  display: grid;
+  grid-template-columns: 2.5rem minmax(0, 1fr);
+  gap: var(--sp-3);
+  padding: var(--sp-4) 0 var(--sp-4) var(--sp-5);
+  border-top: var(--hairline);
+}
+
+.prov-station:first-child .prov-row {
+  border-top: 0;
+}
+
+/* The station marker sits on the rail. */
+.prov-row::before {
+  content: "";
+  position: absolute;
+  left: -3.5px;
+  top: calc(var(--sp-4) + 0.55em);
+  width: 6px;
+  height: 6px;
+  border-radius: var(--r-full);
+  background: var(--fg-display);
+}
+
+.prov-row[data-peer] {
+  --peer-grow: 1.02;
+  --peer-shrink: 1;
+  --peer-recede: 0.45;
+}
+
+.prov-index {
+  color: var(--fg-micro);
+}
+
+.prov-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+  min-width: 0;
+}
+
+/* The identifier, set large and in mono, and allowed to break: a route or a
+   path is one token and must never be truncated. */
+.prov-value {
+  font: 500 var(--fs-h4) / 1.2 var(--font-mono);
+  color: var(--fg-display);
+  overflow-wrap: anywhere;
+}
+
+.prov-note {
+  color: var(--fg-secondary);
+}
+
+.invert-layer .prov-value,
+.invert-layer .prov-index,
+.invert-layer .prov-note {
+  color: var(--disc-ink);
+}
+.invert-layer .prov-row::before {
+  background: var(--disc-ink);
 }
 
 /* ── Scroll-linked display type ─────────────────────────────────────────── */

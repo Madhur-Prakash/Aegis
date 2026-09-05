@@ -118,11 +118,21 @@ class SimulatedRail:
 
 
 def verify_webhook_signature(body: bytes, signature: str, secret: str) -> bool:
-    """Razorpay's scheme: hex HMAC-SHA256 of the raw body.  Verified before anything else."""
+    """Razorpay's scheme: hex HMAC-SHA256 of the raw body.  Verified before anything else.
+
+    Compared as **bytes**, not as ``str``: ``hmac.compare_digest`` refuses two
+    strings when either holds a non-ASCII character, and it refuses them by
+    raising.  Headers reach Starlette latin-1 decoded, so one high byte in
+    ``x-razorpay-signature`` turned an unauthenticated request into a
+    ``TypeError`` and a bare 500 -- an untyped error on the one endpoint the
+    outside world can reach without credentials, which is exactly what I9 says
+    does not happen here.  Encoding first keeps the comparison constant-time and
+    total.
+    """
     if not secret or not signature:
         return False
     expected = hmac.new(secret.encode(), body, hashlib.sha256).hexdigest()
-    return hmac.compare_digest(expected, signature)
+    return hmac.compare_digest(expected.encode("utf-8"), signature.encode("utf-8", "replace"))
 
 
 _rail: PaymentRail | None = None

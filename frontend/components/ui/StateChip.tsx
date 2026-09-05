@@ -12,6 +12,7 @@
  * and clause rows carry a glyph as well as a hue.
  */
 
+import { Check, CircleHelp, X } from "lucide-react";
 import { motion } from "motion/react";
 import type { ReactNode } from "react";
 
@@ -28,11 +29,14 @@ const TONE: Record<Tone, [string, string, string]> = {
   neutral: ["--fg-micro", "transparent", "--border"],
 };
 
-export const VERDICT_GLYPH: Record<string, string> = {
-  PASS: "✓",
-  FAIL: "✕",
-  UNVERIFIABLE: "?",
-};
+/**
+ * The verdict's mark, as a Lucide icon. UNVERIFIABLE is a question, not a
+ * cross: the machine did not fail the evidence, it could not read it.
+ */
+function VerdictIcon({ verdict }: { verdict: string }) {
+  const Icon = verdict === "PASS" ? Check : verdict === "FAIL" ? X : CircleHelp;
+  return <Icon className="ico" size={12} strokeWidth={2.5} aria-hidden />;
+}
 
 export function StateChip({
   tone,
@@ -100,7 +104,7 @@ export function VerdictChip({
   if (verdict !== "UNVERIFIABLE") {
     return (
       <StateChip tone={tone} index={index}>
-        <span aria-hidden>{VERDICT_GLYPH[verdict]}</span>
+        <VerdictIcon verdict={verdict} />
         {verdict}
       </StateChip>
     );
@@ -113,7 +117,7 @@ export function VerdictChip({
       animate={false}
       className={reduced ? "chip--unrest-static" : "chip--unrest"}
     >
-      <span aria-hidden>{VERDICT_GLYPH.UNVERIFIABLE}</span>
+      <VerdictIcon verdict="UNVERIFIABLE" />
       {reduced ? (
         "UNVERIFIABLE"
       ) : (

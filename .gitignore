@@ -21,10 +21,12 @@ out/
 .turbo/
 *.tsbuildinfo
 
-# Env & secrets
+# Env & secrets.  `.env.*` rather than `.env.local` alone: Next and Compose both
+# read `.env.production` / `.env.development`, and those hold the same kind of
+# value as `.env`.  `.env.example` is the one that is meant to be committed.
 .env
-.env.local
-.env.*.local
+.env.*
+!.env.example
 *.pem
 *.key
 

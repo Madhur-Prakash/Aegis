@@ -26,6 +26,8 @@ import { Boot, bootSuppressed } from "@/components/domain/Boot";
 import { useSession } from "@/components/domain/AppProviders";
 import { Shell } from "@/components/domain/Shell";
 import {
+  DecisionScale,
+  FigureProvenance,
   HeadlineChip,
   MicroGrid,
   ProofStrip,
@@ -35,7 +37,7 @@ import {
 } from "@/components/ui/editorial";
 import { InvertOnHover } from "@/components/ui/InvertOnHover";
 import { BlurLines, FlipHeadline, Lattice, Reveal } from "@/components/ui/Reveal";
-import { ScrambleText } from "@/components/ui/ScrambleText";
+import { ScrambleGlyphs, useScramble } from "@/components/ui/ScrambleText";
 import { Button, Capsule, CountUp } from "@/components/ui/primitives";
 import { chipPop, D, E, pick, stagger, ST } from "@/design/motion";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
@@ -58,6 +60,16 @@ import { useI18n } from "@/lib/i18n";
  * ran in 1.36s and still read as brisk; these put the last figure at ~2.2s.
  */
 const CUE = { lede: 0.7, actions: 1.25, rule: 1.55, stats: 1.8 } as const;
+
+/**
+ * Invariant I3 as this page states it. One constant feeds both the I3 row in
+ * the invariants grid and the decision scale, so the two can never disagree.
+ */
+const POLICY = { release: 0.85, reject: 0.35 } as const;
+
+/** The quoted verdict's confidence (section 02): one constant for the
+ *  attribution line and the point on the scale. */
+const QUOTE_CONFIDENCE = 0.197;
 
 /** True once `seconds` have passed since `active` became true. */
 function useCue(seconds: number, active: boolean, reduced: boolean) {
@@ -88,6 +100,9 @@ export default function LandingPage() {
   // The pull quote is its own group: the quote grows and takes full contrast,
   // its two metadata lines step back.
   const quotePeers = usePeerHover();
+  // Owned at page level, not inside the line: the lens renders the line twice,
+  // and both copies must show the same glyphs on every frame.
+  const scramble = useScramble({ phrases: list("cta.phrases") });
 
   const hero = useRef<HTMLElement>(null);
   // ui/02 §5: the hero stays pinned while the next section slides over it, and
@@ -192,7 +207,7 @@ export default function LandingPage() {
     [
       ["I1", "ATTESTATION", "no rupee moves without one", "pass"],
       ["I2", "IMPORT LINT", "agents cannot reach settlement", "pass"],
-      ["I3", "THRESHOLDS", "0.85 release · 0.35 reject · no bypass", "pass"],
+      ["I3", "THRESHOLDS", `${POLICY.release} release · ${POLICY.reject} reject · no bypass`, "pass"],
       ["I4", "CONSERVATION", "held + released + refunded = funded", "pass"],
       ["I5", "HASH CHAIN", "append-only, enforced by trigger", "pass"],
       ["I6", "IDEMPOTENCY", "20 attempts · 1 payout · 1 rail call", "pass"],
@@ -269,6 +284,10 @@ export default function LandingPage() {
             </InvertOnHover>
           </motion.div>
 
+          {/* The actions take the lens too: without it the lede's lens, whose
+              host bleeds 20px into this row, was the only disc a pointer here
+              could raise -- a white circle with nothing of its own to show. */}
+          <InvertOnHover>
           <div className="row hero-cta">
             {[
               {
@@ -299,10 +318,11 @@ export default function LandingPage() {
                 initial="hidden"
                 animate={actionsCued ? "show" : "hidden"}
               >
-                <Capsule dotTone="pass">{t("hero.evalGreen")}</Capsule>
+                <Capsule tone="pass">{t("hero.evalGreen")}</Capsule>
               </motion.span>
             ) : null}
           </div>
+          </InvertOnHover>
 
           {/* A rule that fades looks like a mistake; it draws. Then the stats
               drop in, then each figure counts up (ui/02 §4, t=900ms). */}
@@ -381,21 +401,39 @@ export default function LandingPage() {
           <ScrollType tone="outline">UNVERIFIABLE</ScrollType>
         </InvertOnHover>
 
-        <Reveal>
-          <InvertOnHover>
-          <blockquote className="pullquote" {...quotePeers.group}>
-            <span className="nano quote-meta" {...quotePeers.peer("label")}>
-              {t("section.quoteLabel")}
-            </span>
-            <p className="quote-body" {...quotePeers.peer("quote")}>
-              {t("section.quote")}
-            </p>
-            <span className="nano quote-meta" {...quotePeers.peer("attr")}>
-              {t("section.quoteAttr")}
-            </span>
-          </blockquote>
-          </InvertOnHover>
-        </Reveal>
+        {/* The quote on the left; on the right, the policy it was judged
+            against, as an object -- with this verdict's confidence on it. */}
+        <InvertOnHover>
+          <div className="split">
+            <Reveal>
+              <blockquote className="pullquote" {...quotePeers.group}>
+                <span className="nano quote-meta" {...quotePeers.peer("label")}>
+                  {t("section.quoteLabel")}
+                </span>
+                <p className="quote-body" {...quotePeers.peer("quote")}>
+                  {t("section.quote")}
+                </p>
+                <span className="nano quote-meta" {...quotePeers.peer("attr")}>
+                  {t("section.quoteAttr", { confidence: QUOTE_CONFIDENCE.toFixed(3) })}
+                </span>
+              </blockquote>
+            </Reveal>
+            <DecisionScale
+              release={POLICY.release}
+              reject={POLICY.reject}
+              point={QUOTE_CONFIDENCE}
+              copy={{
+                title: t("section.scaleTitle"),
+                release: t("section.scaleRelease", { v: POLICY.release }),
+                escalate: t("section.scaleEscalate"),
+                reject: t("section.scaleReject", { v: POLICY.reject }),
+                confidence: t("section.scaleConfidence"),
+                human: t("section.scaleHuman"),
+                rule: t("section.scaleRule"),
+              }}
+            />
+          </div>
+        </InvertOnHover>
       </section>
 
       {/* ── 03 / 06 · why a chain at all ─────────────────────────────────── */}
@@ -506,9 +544,42 @@ export default function LandingPage() {
           </InvertOnHover>
         ) : null}
 
-        <Reveal index={1}>
-          <p className="prose proof-note">{t("section.measuredNote")}</p>
-        </Reveal>
+        {/* The note says where the figures come from; the figure beside it
+            shows the same path as structure, with the real file and route. */}
+        <InvertOnHover>
+          <div className="split">
+            <Reveal index={1}>
+              <p className="prose proof-note">{t("section.measuredNote")}</p>
+            </Reveal>
+            <FigureProvenance
+              note={
+                evals.status === "ready" && evals.data.available
+                  ? [
+                      evals.data.generated_at
+                        ? t("section.provOn", { date: dateOnly(evals.data.generated_at, locale) })
+                        : null,
+                      evals.data.provider
+                        ? t("section.provScoredBy", {
+                            provider: evals.data.provider.is_live_model
+                              ? t("section.provLive")
+                              : t("section.provOffline"),
+                          })
+                        : null,
+                    ]
+                      .filter(Boolean)
+                      .join(" · ")
+                  : undefined
+              }
+              copy={{
+                title: t("section.provTitle"),
+                measured: t("section.provMeasured"),
+                written: t("section.provWritten"),
+                served: t("section.provServed"),
+                read: t("section.provRead"),
+              }}
+            />
+          </div>
+        </InvertOnHover>
       </section>
 
       {/* ── 06 / 06 · the closing scramble (reference C1) ────────────────── */}
@@ -521,9 +592,11 @@ export default function LandingPage() {
         <p className="micro cta-meta" {...ctaPeers.peer("label")}>
           {t("cta.label")}
         </p>
-        <div className="cta-line" {...ctaPeers.peer("line")}>
-          <ScrambleText phrases={list("cta.phrases")} />
-        </div>
+        <InvertOnHover>
+          <div className="cta-line" {...ctaPeers.peer("line")}>
+            <ScrambleGlyphs {...scramble} />
+          </div>
+        </InvertOnHover>
         <Link href={status === "signed-in" ? "/deals" : "/register"} data-cursor="">
           <Button cursorLabel={t("cta.start")}>{t("cta.start")}</Button>
         </Link>

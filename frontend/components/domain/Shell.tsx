@@ -8,6 +8,7 @@
  * that is the point.
  */
 
+import { Bell, Menu, Moon, Sun, TriangleAlert } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion, useMotionValueEvent, useScroll } from "motion/react";
@@ -150,7 +151,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
                 aria-expanded={panelOpen}
                 data-cursor=""
               >
-                <span aria-hidden>◔</span>
+                <Bell size={18} strokeWidth={1.75} aria-hidden />
                 {unread > 0 ? <span className="nav-badge num">{unread}</span> : null}
               </button>
               <Link
@@ -171,7 +172,11 @@ export function Shell({ children }: { children: React.ReactNode }) {
             aria-pressed={theme === "dark"}
             data-cursor=""
           >
-            <span aria-hidden>{theme === "dark" ? "☾" : "☀"}</span>
+            {theme === "dark" ? (
+              <Moon size={18} strokeWidth={1.75} aria-hidden />
+            ) : (
+              <Sun size={18} strokeWidth={1.75} aria-hidden />
+            )}
           </button>
           <button
             className="icon-btn"
@@ -204,21 +209,21 @@ export function Shell({ children }: { children: React.ReactNode }) {
             aria-expanded={sheetOpen}
             data-cursor=""
           >
-            <span aria-hidden>≡</span>
+            <Menu size={18} strokeWidth={1.75} aria-hidden />
           </button>
         </div>
       </nav>
 
       {banner ? (
         <div className="degraded" role="status">
-          <span aria-hidden>▲</span>
+          <TriangleAlert size={14} strokeWidth={2} aria-hidden />
           {banner}
         </div>
       ) : null}
 
       {me && !me.email_verified ? (
         <div className="degraded" role="status">
-          <span aria-hidden>▲</span>
+          <TriangleAlert size={14} strokeWidth={2} aria-hidden />
           {t("auth.verifyTitle")} - <Link href="/verify-email" className="link">{t("auth.resend")}</Link>
         </div>
       ) : null}

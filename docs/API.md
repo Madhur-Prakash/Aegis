@@ -1,25 +1,79 @@
+<div align="center">
+
 # API
 
-Base path `/api/v1`. The generated OpenAPI document is
-[`openapi.json`](openapi.json) - **75 paths, 82 operations**, regenerated with `make docs` - and is
-browsable at <http://localhost:8000/docs> when the stack is up.
+**Base path `/api/v1`.**
 
-This document covers the parts a generated schema cannot: the envelope, the auth model, the error
-taxonomy and the conventions that make the API predictable.
+This document covers the parts a generated schema cannot: the envelope, the auth model,
+the error taxonomy, and the conventions that make the API predictable.
+
+<p>
+<a href="openapi.json"><img alt="OpenAPI" src="https://img.shields.io/badge/OpenAPI-75_paths_%C2%B7_82_operations-4FD1A5?style=for-the-badge&labelColor=0D0D10&logo=openapiinitiative&logoColor=4FD1A5"></a>
+<img alt="Typed errors" src="https://img.shields.io/badge/I9-27_typed_errors,_no_bare_500-4FD1A5?style=for-the-badge&labelColor=0D0D10">
+</p>
+
+<p>
+<img alt="Money" src="https://img.shields.io/badge/money-integer_paise-C6C0B4?style=flat-square&labelColor=0D0D10">
+<img alt="Time" src="https://img.shields.io/badge/time-UTC_ISO--8601-C6C0B4?style=flat-square&labelColor=0D0D10">
+<img alt="Auth" src="https://img.shields.io/badge/auth-httpOnly_cookie_+_bearer-C6C0B4?style=flat-square&labelColor=0D0D10">
+<img alt="Realtime" src="https://img.shields.io/badge/realtime-SSE-C6C0B4?style=flat-square&labelColor=0D0D10">
+<img alt="Regenerate" src="https://img.shields.io/badge/regenerate-make_docs-C6C0B4?style=flat-square&labelColor=0D0D10">
+</p>
+
+<p>
+  <a href="../README.md">Overview</a>
+  &nbsp;·&nbsp; <a href="README.md">Docs</a>
+  &nbsp;·&nbsp; <a href="ARCHITECTURE.md">Architecture</a>
+  &nbsp;·&nbsp; <b>API</b>
+  &nbsp;·&nbsp; <a href="DATA.md">Data</a>
+  &nbsp;·&nbsp; <a href="SECURITY.md">Security</a>
+  &nbsp;·&nbsp; <a href="OPERATIONS.md">Operations</a>
+  &nbsp;·&nbsp; <a href="DEMO.md">Demo</a>
+  &nbsp;·&nbsp; <a href="UI_MOTION.md">UI &amp; Motion</a>
+  &nbsp;·&nbsp; <a href="DECISIONS.md">Decisions</a>
+  &nbsp;·&nbsp; <a href="LIMITATIONS.md">Limitations</a>
+</p>
+
+</div>
+
+<samp>
+
+[1. Conventions](#1-conventions) &nbsp;·&nbsp;
+[2. Authentication](#2-authentication) &nbsp;·&nbsp;
+[3. The error envelope](#3-the-error-envelope-i9) &nbsp;·&nbsp;
+[4. Endpoint groups](#4-endpoint-groups) &nbsp;·&nbsp;
+[5. Realtime](#5-realtime) &nbsp;·&nbsp;
+[6. Rate limits](#6-rate-limits) &nbsp;·&nbsp;
+[7. Idempotency](#7-idempotency)
+
+</samp>
+
+> [!TIP]
+> The generated OpenAPI document is [`openapi.json`](openapi.json) — **75 paths, 82 operations**,
+> regenerated with `make docs` — and is browsable at <http://localhost:8000/docs> when the stack is
+> up.
 
 ---
 
 ## 1. Conventions
 
 | convention | rule |
-|---|---|
+|:--|:--|
 | **Money** | Always integer **paise**, always a field named `*_paise`, always `BIGINT`. No floats, ever, and no `Decimal` at the rail boundary. `420000000` is INR 4,200,000.00. |
 | **Time** | UTC, ISO-8601 with `Z`. The frontend renders in `Asia/Kolkata`; the API never does. |
-| **Ids** | UUID v4 as strings, except deterministic seed ids which are UUID v5 so `make seed` is idempotent. |
-| **Hashes** | Lowercase hex, no `0x` prefix, except EVM transaction hashes and addresses, which keep theirs. |
+| **Ids** | UUID v4 as strings, except deterministic seed ids, which are UUID v5 so `make seed` is idempotent. |
+| **Hashes** | Lowercase hex, no `0x` prefix — except EVM transaction hashes and addresses, which keep theirs. |
 | **Confidence** | Float in `[0, 1]`, three decimals when displayed. `0.510` and `0.51` must not look different. |
 | **Enums** | Uppercase snake case, matching the Python `StrEnum` exactly. The frontend never invents a state name. |
 | **Pagination** | Deliberately absent. Every list endpoint is scoped to one organization and one deal; none can grow unboundedly in this product's shape. |
+
+> [!NOTE]
+> The money rule is invariant **I4** at the wire level: `held + released + refunded == funded` is
+> only checkable because every one of those is an integer. See
+> [the money bar in the UI](DEMO.md#minute-1--the-cockpit), where the same arithmetic is rendered as
+> three flex segments in a fixed-width track.
+
+---
 
 ## 2. Authentication
 
@@ -27,32 +81,49 @@ Access and refresh tokens are issued as **httpOnly, SameSite cookies** on `POST 
 `/auth/register`, `/auth/refresh` and `/dev/assume`. The response body also carries the access token,
 which is what a non-browser client uses as `Authorization: Bearer <token>`.
 
+<img alt="" src="https://img.shields.io/badge/hashing-Argon2id-4FD1A5?style=flat-square&labelColor=0D0D10">
+<img alt="" src="https://img.shields.io/badge/refresh-ROTATING,_FAMILY_REVOKED_ON_REUSE-4FD1A5?style=flat-square&labelColor=0D0D10">
+<img alt="" src="https://img.shields.io/badge/impersonation-NONE-FF4A4A?style=flat-square&labelColor=0D0D10">
+
 * Passwords are hashed with **Argon2id**.
-* Refresh tokens rotate on use, and **reuse of a rotated token revokes the whole family** - the
+* Refresh tokens rotate on use, and **reuse of a rotated token revokes the whole family** — the
   revocation is committed inside the service before the error is raised, so a request that raises
   still leaves the family revoked.
+* Revocation is **immediate, not eventual**: `current_user` checks the access token's `sid` (its
+  refresh-family id) against the refresh rows, so a revoked session's bearer token fails on the very
+  next call rather than living out its 15-minute TTL. See
+  [ADR-008b](DECISIONS.md#adr-008b--session-revocation-is-checked-not-assumed).
 * `POST /auth/reset-password` revokes every other session.
 * An **unverified** account can sign in and read, but cannot create or fund a deal, submit evidence,
   approve anything, **or accept an organization invitation**. Those endpoints return
-  `EMAIL_NOT_VERIFIED` (403). Accepting an invitation is on that list deliberately: it grants access
-  to another organization's deals, so the invitee must first have proven they hold the mailbox.
+  `EMAIL_NOT_VERIFIED` (403).
+
+> [!IMPORTANT]
+> Accepting an invitation is on the verified-email list **deliberately**: it grants access to another
+> organization's deals, so the invitee must first have proven they hold the mailbox.
 
 ### Dependency tiers
 
 | dependency | requires |
-|---|---|
+|:--|:--|
 | `ViewerDep` | a session and an active organization; read-only roles included |
 | `MembershipDep` | a session with an active organization membership |
-| `MemberDep` | membership **and** a verified email; this is what money-touching endpoints use |
+| `MemberDep` | membership **and** a verified email — this is what money-touching endpoints use |
 | `RepoDep` | a `TenantRepo` already bound to the acting organization |
 
-There is no `?as=` parameter and no impersonation header. `POST /dev/assume` performs a genuine
-login for a seeded user through `auth_service.login`, password verification included, and is only
+There is no `?as=` parameter and no impersonation header. `POST /dev/assume` performs a genuine login
+for a seeded user through `auth_service.login`, password verification included, and is only
 registered when `DEMO_MODE=true`.
+
+**Further reading** &nbsp;
+[Sessions and rate limits — Security §2](SECURITY.md#2-authentication-and-sessions) &nbsp;·&nbsp;
+[Tenant isolation — Security §3](SECURITY.md#3-authorization-and-tenant-isolation-i12)
+
+---
 
 ## 3. The error envelope (I9)
 
-Every expected failure returns this shape. A bare 500 is a bug, not an outcome.
+Every expected failure returns this shape. **A bare 500 is a bug, not an outcome.**
 
 ```json
 {
@@ -65,76 +136,120 @@ Every expected failure returns this shape. A bare 500 is a bug, not an outcome.
 }
 ```
 
-`code` is stable and machine-readable - clients branch on it, never on the prose. `message` is
-human-readable and may change. `details` is a typed object per code. `request_id` also appears on the
-`x-request-id` response header and in every log line for that request, so a support conversation can
-start with an id.
+| field | contract |
+|:--|:--|
+| `code` | Stable and machine-readable. Clients branch on this, **never** on the prose. |
+| `message` | Human-readable, and may change between releases. |
+| `details` | A typed object, per code. |
+| `request_id` | Also on the `x-request-id` response header and in every log line for that request, so a support conversation can start with an id. |
 
 The frontend's `ApiError` carries `code`, `status`, `details` and `requestId`, and every error block
-in the UI prints the code above the message.
+in the UI prints the code above the message — mirroring I9 in the interface.
 
 ### The full taxonomy
 
-| code | HTTP | when |
-|---|---|---|
-| `NOT_FOUND` | 404 | The resource does not exist **or** belongs to another organization. Deliberately indistinguishable (I12). |
-| `VALIDATION_FAILED` | 422 | Request body or query failed validation. |
-| `CONFLICT` | 409 | The request conflicts with current state. |
-| `RATE_LIMITED` | 429 | Token bucket exhausted. `details` carries the window. |
-| `SERVICE_UNAVAILABLE` | 503 | A required dependency is down. |
-| `UNAUTHENTICATED` | 401 | No session. |
-| `INVALID_CREDENTIALS` | 401 | Wrong email or password. Identical for both, so it is not an enumeration oracle. |
-| `FORBIDDEN` | 403 | Authenticated, but the role does not permit this. |
-| `EMAIL_NOT_VERIFIED` | 403 | Verified email required for this action. |
-| `TOKEN_INVALID` | 401 | Malformed, expired, or wrong-key token. |
-| `REFRESH_TOKEN_REUSE` | 401 | A rotated refresh token was replayed. The family is revoked. |
-| `LAST_OWNER_PROTECTED` | 409 | An organization must always keep at least one owner. |
-| `ILLEGAL_TRANSITION` | 409 | An unknown `(state, event)` pair (I10). Never silently ignored. |
-| `MONEY_INVARIANT_VIOLATION` | 409 | The operation would break `held + released + refunded == funded` (I4). |
-| `NO_QUALIFYING_ATTESTATION` | 409 | A settlement was attempted with no qualifying attestation (I1). |
-| `CONFIDENCE_BELOW_RELEASE_THRESHOLD` | 409 | Auto-release requested below 0.85 (I3). |
-| `UNVERIFIABLE_REQUIRED_CLAUSE` | 409 | A required clause is `UNVERIFIABLE`; auto-release is impossible (I3, ADR-004). |
-| `HUMAN_DECISION_REQUIRED` | 409 | Dispute settlement attempted before a human decided (I8). |
-| `RAIL_FAILURE` | 502 | The payment rail rejected or failed the call. |
-| `CHAIN_UNAVAILABLE` | 503 | The chain RPC or contract is not configured or unreachable. Never blocks money. |
-| `ARTIFACT_REJECTED` | 422 | Upload failed sniffing, size or type validation. |
-| `ATTESTATION_SIGNATURE_INVALID` | 409 | An attestation payload does not verify against its signature. |
-| `LLM_OUTPUT_REJECTED` | 409 | The model returned output that failed schema validation after retries. |
+Twenty-seven typed codes, in the three groups
+[`app/common/errors.py`](../backend/app/common/errors.py) declares them in.
 
-The three settlement codes are worth reading as a set: `NO_QUALIFYING_ATTESTATION`,
-`CONFIDENCE_BELOW_RELEASE_THRESHOLD` and `UNVERIFIABLE_REQUIRED_CLAUSE` are the machine-readable
-forms of I1 and I3. A client that gets one of them has been told *precisely* why the money did not
-move.
+> [!NOTE]
+> There are **24 exception classes** but **27 codes**: four of the authorization rules raise an
+> existing class with a `code=` override, because the HTTP status and the envelope shape are already
+> right and only the machine-readable reason differs. A client still branches on `code` alone.
+
+<img alt="" src="https://img.shields.io/badge/generic-6-C6C0B4?style=flat-square&labelColor=0D0D10">
+
+| code | HTTP | when |
+|:--|:--|:--|
+| `NOT_FOUND` | `404` | The resource does not exist **or** belongs to another organization. Deliberately indistinguishable (I12). |
+| `VALIDATION_FAILED` | `422` | Request body or query failed validation. |
+| `CONTENT_NOT_BASE64` | `422` | `content_b64` on `POST /provenance/tamper-check` is not valid base64. Previously an unbounded decode and a bare 500. |
+| `CONFLICT` | `409` | The request conflicts with current state. |
+| `RATE_LIMITED` | `429` | Token bucket exhausted. `details` carries the window. |
+| `SERVICE_UNAVAILABLE` | `503` | A required dependency is down. |
+
+<img alt="" src="https://img.shields.io/badge/auth_and_tenancy-10-C6C0B4?style=flat-square&labelColor=0D0D10">
+
+| code | HTTP | when |
+|:--|:--|:--|
+| `UNAUTHENTICATED` | `401` | No session. |
+| `INVALID_CREDENTIALS` | `401` | Wrong email or password. **Identical for both**, in body *and* in timing, so it is not an enumeration oracle. |
+| `FORBIDDEN` | `403` | Authenticated, but the role does not permit this. |
+| `EMAIL_NOT_VERIFIED` | `403` | Verified email required for this action. |
+| `TOKEN_INVALID` | `401` | Malformed, expired, or wrong-key token. |
+| `REFRESH_TOKEN_REUSE` | `401` | A rotated refresh token was replayed. The family is revoked. |
+| `LAST_OWNER_PROTECTED` | `409` | An organization must always keep at least one owner. |
+| `ROLE_RANK_INSUFFICIENT` | `409` | You may not demote or remove a member whose role outranks your own. Peers and yourself are still allowed. |
+| `ONLY_BUYER_APPROVES_RELEASE` | `403` | A human review that **releases** money, or a dispute resolution with `release_paise > 0`, was attempted by the selling organization. A `REJECT` — which moves nothing — and a pure refund are still open to either party. |
+| `ONLY_SELLER_SUBMITS_EVIDENCE` | `403` | Evidence upload or submission was attempted by the buying organization. |
+
+> [!IMPORTANT]
+> The last two are **side** checks, and they are a different mechanism from the settlement guard.
+> I3 decides *whether the evidence justifies a release*; these decide *who is entitled to ask*. The
+> guard alone was not enough: a seller could raise a dispute on their own milestone, have their own
+> admin resolve it in their favour, and I8 was satisfied throughout — because I8 requires **a**
+> human, not a **disinterested** one. See
+> [Limitations §7](LIMITATIONS.md#7-three-defects-this-build-found-by-running-itself).
+
+<img alt="" src="https://img.shields.io/badge/domain-11-C6C0B4?style=flat-square&labelColor=0D0D10">
+
+| code | HTTP | when |
+|:--|:--|:--|
+| `ILLEGAL_TRANSITION` | `409` | An unknown `(state, event)` pair (I10). Never silently ignored. |
+| `MONEY_INVARIANT_VIOLATION` | `409` | The operation would break `held + released + refunded == funded` (I4). |
+| `NO_QUALIFYING_ATTESTATION` | `409` | A settlement was attempted with no qualifying attestation (I1). |
+| `CONFIDENCE_BELOW_RELEASE_THRESHOLD` | `409` | Auto-release requested below 0.85 (I3). |
+| `UNVERIFIABLE_REQUIRED_CLAUSE` | `409` | A required clause is `UNVERIFIABLE`; auto-release is impossible (I3, [ADR-004](DECISIONS.md#adr-004--a-required-unverifiable-clause-escalates-it-never-rejects)). |
+| `HUMAN_DECISION_REQUIRED` | `409` | Dispute settlement attempted before a human decided (I8). |
+| `RAIL_FAILURE` | `502` | The payment rail rejected or failed the call. |
+| `CHAIN_UNAVAILABLE` | `503` | The chain RPC or contract is not configured or unreachable. **Never blocks money.** |
+| `ARTIFACT_REJECTED` | `422` | Upload failed sniffing, size or type validation. |
+| `ATTESTATION_SIGNATURE_INVALID` | `409` | An attestation payload does not verify against its signature. |
+| `LLM_OUTPUT_REJECTED` | `409` | The model returned output that failed schema validation after retries. |
+
+`INTERNAL_ERROR` (`500`) is the base class the other twenty-three inherit from. It is the shape an
+*unexpected* failure takes, not an outcome any endpoint is designed to return — if you see one, it is
+a defect.
+
+> [!IMPORTANT]
+> Read the three settlement codes as a set. `NO_QUALIFYING_ATTESTATION`,
+> `CONFIDENCE_BELOW_RELEASE_THRESHOLD` and `UNVERIFIABLE_REQUIRED_CLAUSE` are the machine-readable
+> forms of **I1** and **I3**. A client that receives one of them has been told *precisely* why the
+> money did not move.
+
+---
 
 ## 4. Endpoint groups
 
 | group | prefix | notes |
-|---|---|---|
-| Auth | `/auth/*` | register, login, refresh, logout, verify-email, resend-verification, forgot/reset/change password, `me`, preferences |
-| Organizations | `/organizations/*` | current, switch, members, roles, invitations, accept |
-| Entities | `/entities` | the counterparty directory |
-| Deals | `/deals/*` | list, get, `demo`, sign-terms, fund, cancel, timeline, risk |
-| Milestones | `/milestones/*` | get, `start-verify`, `review-queue`, `human-review` |
-| Evidence | `/evidence/*` | bundle, upload, submit, `artifacts/{id}/proof`, `verify`, `download/{token}` |
-| Verification | `/verification/*` | attestation by milestone, attestation by id |
-| Provenance | `/provenance/*` | attestation provenance, deal chain records, `tamper-check` |
-| Ledger | `/ledger/deals/{id}` | entries and `verify` |
-| Disputes | `/disputes/*`, `/milestones/{id}/disputes` | raise, counter-claim, arbiter, resolve |
-| Settlement | `/settlements/deals/{id}` | authorizations, with `consumed_at` and idempotency key |
-| Payments | `/payments/*` | payouts, `rail` disclosure, webhook receiver |
-| Reputation | `/reputation/entities/{id}` | the counterparty passport |
-| Notifications | `/notifications/*` | list, mark-read, preferences |
-| Chat | `/chat/deals/{id}` | deal-scoped messages. Never evidence. |
-| Realtime | `/realtime/*` | SSE: deals, verification, review, chat, notifications |
-| Health | `/health/*` | `live`, `ready`, `metrics`, `eval-summary` |
-| Dev | `/dev/*` | `assume`, `state`. Only registered when `DEMO_MODE=true`. |
+|:--|:--|:--|
+| **Auth** | `/auth/*` | register, login, refresh, logout, verify-email, resend-verification, forgot/reset/change password, `me`, preferences |
+| **Organizations** | `/organizations/*` | current, switch, members, roles, invitations, accept |
+| **Entities** | `/entities` | the counterparty directory |
+| **Deals** | `/deals/*` | list, get, `demo`, sign-terms, fund, cancel, timeline, risk |
+| **Milestones** | `/milestones/*` | get, `start-verify`, `review-queue`, `human-review` |
+| **Evidence** | `/evidence/*` | bundle, upload, submit, `artifacts/{id}/proof`, `verify`, `download/{token}` |
+| **Verification** | `/verification/*` | attestation by milestone, attestation by id |
+| **Provenance** | `/provenance/*` | attestation provenance, deal chain records, `tamper-check` |
+| **Ledger** | `/ledger/deals/{id}` | entries and `verify` |
+| **Disputes** | `/disputes/*`, `/milestones/{id}/disputes` | raise, counter-claim, arbiter, resolve |
+| **Settlement** | `/settlements/deals/{id}` | authorizations, with `consumed_at` and the idempotency key |
+| **Payments** | `/payments/*` | payouts, `rail` disclosure, webhook receiver |
+| **Reputation** | `/reputation/entities/{id}` | the counterparty passport |
+| **Notifications** | `/notifications/*` | list, mark-read, preferences |
+| **Chat** | `/chat/deals/{id}` | deal-scoped messages. **Never evidence.** |
+| **Realtime** | `/realtime/*` | SSE: deals, verification, review, chat, notifications |
+| **Health** | `/health/*` | `live`, `ready`, `metrics`, `eval-summary` |
+| **Dev** | `/dev/*` | `assume`, `state`. Only registered when `DEMO_MODE=true`. |
 
 ### Endpoints worth knowing about
 
-**`GET /health/ready`** - the readiness contract. Every dependency reports `ready`, `required` and,
-where relevant, `mode`:
+<details open>
+<summary><b><code>GET /health/ready</code></b> &nbsp;—&nbsp; the readiness contract</summary>
 
-Actual response from the running stack:
+<br>
+
+Every dependency reports `ready`, `required` and, where relevant, `mode`. Actual response from the
+running stack:
 
 ```json
 {
@@ -153,13 +268,18 @@ Actual response from the running stack:
 ```
 
 `ok` stays `true` while only optional dependencies are degraded. Redis is optional because its two
-jobs - rate limiting and the settlement lock fast path - both degrade safely: the atomic DB claim
+jobs — rate limiting and the settlement lock fast path — both degrade safely: the atomic DB claim
 still serialises settlement without it.
 
-The boot screen and the degraded banner read this, so the interface cannot claim a dependency is fine
-when the backend says it is not.
+The boot screen and the degraded banner read this, so **the interface cannot claim a dependency is
+fine when the backend says it is not**.
 
-**`GET /payments/rail`** - the honesty table, labelled **per operation**:
+</details>
+
+<details open>
+<summary><b><code>GET /payments/rail</code></b> &nbsp;—&nbsp; the honesty table, labelled per operation</summary>
+
+<br>
 
 ```json
 {
@@ -176,25 +296,59 @@ when the backend says it is not.
 ```
 
 Per operation, not per rail: webhook verification can be real while a payout is simulated, and
-collapsing that into one label would be a lie in one direction or the other.
+collapsing that into one label would be a lie in one direction or the other. See
+[Limitations §1](LIMITATIONS.md#1-the-payment-rail-is-simulated-in-this-configuration).
 
-**`GET /health/eval-summary`** - the headline numbers from the last `make eval`, verbatim, so no
-figure on a marketing surface can be typed by hand. Returns
-`{"available": false, "reason": "…"}` when `evals/out/summary.json` is absent, and the landing page
-then shows nothing rather than a number nobody measured.
+</details>
 
-**`POST /evidence/verify`** - public Merkle verification. Takes `(leaf, proof, root)` and recomputes
-the root from the path alone. This is the endpoint that makes a proof a proof: a second party can
-check it without trusting the server that produced it.
+<details>
+<summary><b><code>GET /health/eval-summary</code></b> &nbsp;—&nbsp; the measured numbers, verbatim</summary>
 
-**`POST /provenance/tamper-check`** - takes `content_b64` and `expected_sha256` and returns the
-digest it **actually computed** for those bytes. It changes nothing. This backs the "Tamper one byte"
-control in the UI.
+<br>
 
-**`GET /evidence/download/{token}`** - a short-lived HMAC-signed presigned link, minted on the bundle
-view. There is no public path to an artifact and the frontend never constructs one.
+The headline numbers from the last `make eval`, served verbatim, so no figure on a marketing surface
+can be typed by hand. Returns `{"available": false, "reason": "…"}` when `evals/out/summary.json` is
+absent — and the landing page then shows **nothing** rather than a number nobody measured.
+
+</details>
+
+<details>
+<summary><b><code>POST /evidence/verify</code></b> &nbsp;—&nbsp; public Merkle verification</summary>
+
+<br>
+
+Takes `(leaf, proof, root)` and recomputes the root from the path alone. This is the endpoint that
+makes a proof a proof: a second party can check it **without trusting the server that produced it**.
+
+</details>
+
+<details>
+<summary><b><code>POST /provenance/tamper-check</code></b> &nbsp;—&nbsp; hash these exact bytes</summary>
+
+<br>
+
+Takes `content_b64` and `expected_sha256`, and returns the digest it **actually computed** for those
+bytes. It changes nothing. This backs the
+[Tamper one byte](DEMO.md#the-provenance-screen--provenanceattestationid) control in the UI.
+
+</details>
+
+<details>
+<summary><b><code>GET /evidence/download/{token}</code></b> &nbsp;—&nbsp; short-lived presigned link</summary>
+
+<br>
+
+An HMAC-signed presigned link, minted on the tenant-scoped bundle view, with the expiry inside the
+signed payload. There is **no public path to an artifact** and the frontend never constructs one.
+
+</details>
+
+---
 
 ## 5. Realtime
+
+<img alt="" src="https://img.shields.io/badge/transport-SSE-C6C0B4?style=flat-square&labelColor=0D0D10">
+<img alt="" src="https://img.shields.io/badge/payload-A_HINT,_NEVER_A_SOURCE-FFC24B?style=flat-square&labelColor=0D0D10">
 
 Server-Sent Events, tenant-scoped at subscribe time. Event names:
 
@@ -202,21 +356,97 @@ Server-Sent Events, tenant-scoped at subscribe time. Event names:
 `verification.completed` · `review.decided` · `dispute.raised` · `dispute.resolved` ·
 `chat.message`
 
-**The payload is only ever a hint.** Every client handler refetches from the API rather than trusting
-the event body, so a dropped or duplicated event costs a refresh and never a wrong number on screen.
+> [!IMPORTANT]
+> **The payload is only ever a hint.** Every client handler refetches from the API rather than
+> trusting the event body, so a dropped or duplicated event costs a refresh and **never** a wrong
+> number on screen.
+
 A 20-second keep-alive comment holds the connection open; the client reconnects with capped
-exponential backoff so a backend restart cannot become a reconnect storm.
+exponential backoff, so a backend restart cannot become a reconnect storm.
+
+---
 
 ## 6. Rate limits
 
-Redis token buckets, keyed per organization or per client IP depending on the surface:
-`auth:register` and `auth:login` (per IP **and** per account, so one account cannot be brute-forced
-from many addresses), `verify`, `upload`, `chat`. Exceeding one returns `RATE_LIMITED` (429) - proven
-by its own test rather than disabled in the suite.
+Redis token buckets. These are **every** bucket that exists:
+
+| bucket | default | keyed by | setting |
+|:--|:--|:--|:--|
+| `auth:register` | `10 / 60s` | client IP | `RATE_LIMIT_AUTH` |
+| `auth:login` | `10 / 60s` | client IP | `RATE_LIMIT_AUTH` |
+| `auth:login:account` | `10 / 60s` | normalised email | `RATE_LIMIT_AUTH` |
+| `auth:verify-email` | `10 / 60s` | client IP | `RATE_LIMIT_AUTH` |
+| `auth:forgot` | `10 / 60s` | client IP | `RATE_LIMIT_AUTH` |
+| `auth:forgot:account` | `10 / 60s` | normalised email | `RATE_LIMIT_AUTH` |
+| `auth:reset` | `10 / 60s` | client IP | `RATE_LIMIT_AUTH` |
+| `auth:change-password` | `10 / 60s` | **user id** | `RATE_LIMIT_AUTH` |
+| `auth:resend` | `3 / 60s` | client IP | fixed in code |
+| `auth:resend:account` | `3 / 60s` | normalised email | fixed in code |
+| `verify` | `12 / 60s` | organization | `RATE_LIMIT_VERIFY` |
+| `upload` | `40 / 60s` | organization | `RATE_LIMIT_UPLOAD` |
+
+**Every route that sends an email or runs a password hash is limited twice** — once per IP and once
+per account. That pairing is the point: the per-account bucket is what actually bounds credential
+stuffing and mailbox bombing, because it is keyed on something the caller cannot vary freely.
+`change-password` is keyed on the user id because it runs two 64 MiB Argon2 operations per call.
+
+Exceeding a bucket returns `RATE_LIMITED` (429) — proven by its own test rather than disabled in the
+suite.
+
+> [!WARNING]
+> **Two honest caveats on the per-IP half.**
+>
+> 1. `POST /chat/deals/{id}` is **not** rate limited at all. It is authenticated, tenant-scoped and
+>    never used as evidence, so the exposure is a member spamming their own counterparty rather than
+>    an unauthenticated abuse path — but it is an unbounded write.
+> 2. The backend derives the client IP from `x-forwarded-for` when present. The frontend proxy no
+>    longer forwards a client-supplied value ([Security §7](SECURITY.md#7-transport-and-headers)),
+>    which closes the browser path — but a caller reaching the API directly can still choose its own
+>    bucket. The per-account buckets above are what hold in that case.
+>
+> Both are listed in [Security §8](SECURITY.md#8-not-built-and-named-as-such).
+
+---
 
 ## 7. Idempotency
 
+<img alt="" src="https://img.shields.io/badge/I6-20_attempts_%E2%86%92_1_payout,_1_rail_call-4FD1A5?style=flat-square&labelColor=0D0D10">
+
 Money endpoints are idempotent on `(milestone_id, direction, attempt_no)`, enforced by a unique
 index. The rail receives an explicit idempotency key derived from that triple, so a retry after a
-network failure is a no-op at the provider. 20 concurrent release attempts produce **exactly one
-payout and exactly one rail call** - measured, in Suite B check 7.
+network failure is a no-op at the provider.
+
+20 concurrent release attempts produce **exactly one payout and exactly one rail call** — measured,
+in Suite B check 7.
+
+**Further reading** &nbsp;
+[The atomic claim — Architecture §3](ARCHITECTURE.md#3-money-path-and-the-transactional-outbox-i13) &nbsp;·&nbsp;
+[Why the Redis lock is not the guarantee — ADR-005](DECISIONS.md#adr-005--the-atomic-db-claim-not-the-redis-lock-is-the-idempotency-guarantee)
+
+---
+
+<div align="center">
+
+<sub><b>Aegis</b> · programmable escrow for agentic commerce</sub>
+
+<p>
+  <a href="ARCHITECTURE.md">&larr; Architecture</a>
+  &nbsp;&nbsp;·&nbsp;&nbsp;
+  <a href="README.md">Docs index</a>
+  &nbsp;&nbsp;·&nbsp;&nbsp;
+  <a href="DATA.md">Data &rarr;</a>
+</p>
+
+<sub>
+<a href="../README.md">Overview</a> ·
+<a href="ARCHITECTURE.md">Architecture</a> ·
+<a href="DATA.md">Data</a> ·
+<a href="SECURITY.md">Security</a> ·
+<a href="OPERATIONS.md">Operations</a> ·
+<a href="DEMO.md">Demo</a> ·
+<a href="UI_MOTION.md">UI &amp; Motion</a> ·
+<a href="DECISIONS.md">Decisions</a> ·
+<a href="LIMITATIONS.md">Limitations</a>
+</sub>
+
+</div>

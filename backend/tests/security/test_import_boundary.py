@@ -80,11 +80,117 @@ def test_a_function_local_import_is_also_caught(tmp_path):
     assert violations[0].line == 2
 
 
+@pytest.mark.parametrize(
+    "source",
+    [
+        # `app/agents/verifier/` is three dots from `app`, so every one of these
+        # resolves into the money path.  The scanner used to skip relative
+        # imports outright, on the stated grounds that one "cannot cross a
+        # package boundary here" -- which was simply false, and was a hole
+        # straight through the one invariant whose value is that it cannot be
+        # talked around.
+        "from ...settlement.engine import authorize_release",
+        "from ...settlement import engine",
+        "from ...rails.base import get_rail",
+        "from ...payments import webhooks",
+        "from ...deals.service import fund_deal",
+        "def sneaky():\n    from ...rails.base import get_rail\n    return get_rail\n",
+    ],
+)
+def test_a_relative_import_into_the_money_path_is_caught(tmp_path, source):
+    app = _tree(tmp_path, {"agents/verifier/pipeline.py": source + "\n"})
+    violations = scan(app)
+    assert violations, f"{source!r} was not caught"
+    assert all(v.rule == "I2/agents-may-not-move-money" for v in violations)
+
+
+@pytest.mark.parametrize(
+    "source",
+    [
+        "import importlib\nm = importlib.import_module('app.settlement.engine')\n",
+        "from importlib import import_module\nm = import_module('app.rails.base')\n",
+        "m = __import__('app.payments.webhooks')\n",
+        "import importlib.util\ns = importlib.util.find_spec('app.rails')\n",
+        "def later():\n    import importlib\n    return importlib.import_module('app.rails')\n",
+    ],
+)
+def test_a_dynamic_import_of_the_money_path_is_caught(tmp_path, source):
+    """A boundary that one `importlib` call steps around is decoration."""
+    app = _tree(tmp_path, {"agents/verifier/pipeline.py": source})
+    violations = scan(app)
+    assert violations, f"{source!r} was not caught"
+    assert all(v.rule == "I2/agents-may-not-move-money" for v in violations)
+
+
+def test_a_module_name_built_at_runtime_is_refused_outright(tmp_path):
+    """The lint cannot read it, so the lint cannot clear it.
+
+    I2's value is that the boundary is decidable by looking at the source.  A
+    computed module name inside a checked package is therefore a violation on its
+    own terms, whatever it happens to evaluate to.
+    """
+    app = _tree(
+        tmp_path,
+        {
+            "agents/verifier/pipeline.py": (
+                "import importlib\n"
+                "name = 'app.' + 'settlement' + '.engine'\n"
+                "m = importlib.import_module(name)\n"
+            )
+        },
+    )
+    violations = scan(app)
+    assert violations
+    assert "computed" in violations[0].imported
+    assert violations[0].line == 3
+
+
+def test_a_relative_import_inside_the_agents_package_stays_clean(tmp_path):
+    """The agents may of course import each other."""
+    app = _tree(
+        tmp_path,
+        {
+            "agents/prompts.py": "CLAUSE_SYSTEM_PROMPT = ''\n",
+            "agents/verifier/pipeline.py": (
+                "from ..prompts import CLAUSE_SYSTEM_PROMPT\n"
+                "from .schemas import ClauseEvaluation\n"
+                "from ...settlement.guards import decide\n"
+            ),
+            "agents/verifier/schemas.py": "class ClauseEvaluation: pass\n",
+        },
+    )
+    assert scan(app) == []
+
+
+def test_a_dynamic_import_of_something_harmless_stays_clean(tmp_path):
+    app = _tree(
+        tmp_path,
+        {"agents/verifier/pipeline.py": "import importlib\nm = importlib.import_module('json')\n"},
+    )
+    assert scan(app) == []
+
+
 def test_the_money_path_importing_an_agent_is_caught(tmp_path):
     app = _tree(tmp_path, {"settlement/engine.py": "from app.agents._llm import get_provider\n"})
     violations = scan(app)
     assert violations
     assert violations[0].rule == "I2/money-may-not-call-agents"
+
+
+@pytest.mark.parametrize(
+    "source",
+    [
+        "from ..agents._llm import get_provider\n",
+        "import importlib\nm = importlib.import_module('app.agents.verifier.pipeline')\n",
+        "import importlib\nm = importlib.import_module('app.' + 'agents')\n",
+    ],
+)
+def test_the_money_path_is_checked_in_the_same_directions(tmp_path, source):
+    """Both halves of I2, and both bypasses, in both directions."""
+    app = _tree(tmp_path, {"settlement/engine.py": source})
+    violations = scan(app)
+    assert violations, f"{source!r} was not caught"
+    assert all(v.rule == "I2/money-may-not-call-agents" for v in violations)
 
 
 def test_the_pure_guard_module_is_deliberately_allowed(tmp_path):

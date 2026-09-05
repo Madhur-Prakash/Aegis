@@ -134,8 +134,11 @@ class ClauseIn(BaseModel):
 
 
 class ConditionIn(BaseModel):
-    clauses: list[ClauseIn]
-    required_artifact_types: list[str] = Field(default_factory=list)
+    # Bounded because every clause is rendered into the verifier's prompt and
+    # evaluated once per verification run: an unbounded list let one deal make
+    # every later `start-verify` on it arbitrarily expensive.
+    clauses: list[ClauseIn] = Field(max_length=32)
+    required_artifact_types: list[str] = Field(default_factory=list, max_length=16)
     tolerance: dict[str, Any] = Field(default_factory=dict)
 
 
@@ -156,7 +159,7 @@ class DealIn(BaseModel):
     dispute_window_days: int = Field(default=7, ge=0, le=90)
     category: str = "apparel"
     tolerance: dict[str, Any] = Field(default_factory=dict)
-    milestones: list[MilestoneIn]
+    milestones: list[MilestoneIn] = Field(max_length=64)
 
     @field_validator("milestones")
     @classmethod
@@ -244,10 +247,40 @@ class BundleOut(BaseModel):
     artifacts: list[ArtifactOut]
 
 
+class ProofStepIn(BaseModel):
+    """One sibling on the path from a leaf to the root."""
+
+    position: Literal["left", "right"]
+    hash: str = Field(min_length=64, max_length=66)
+
+
 class VerifyProofIn(BaseModel):
+    """`POST /evidence/verify` is public, so its bounds are load-bearing.
+
+    ``proof`` used to be an unvalidated ``list[dict[str, str]]``: unbounded in
+    length, and free to carry a ``position`` the verifier does not understand or
+    a ``hash`` that is not hex, which reached ``bytes.fromhex`` and came back as
+    a 500 rather than "that proof does not verify".  A bundle holds a few dozen
+    artifacts, so 64 steps is a tree of 2^64 leaves and then some.
+    """
+
     leaf: str = Field(min_length=64, max_length=66)
-    proof: list[dict[str, str]]
+    proof: list[ProofStepIn] = Field(default_factory=list, max_length=64)
     root: str = Field(min_length=64, max_length=66)
+
+
+class TamperCheckIn(BaseModel):
+    """`POST /provenance/tamper-check` is public too, and it decodes what it is given.
+
+    The handler took a bare ``dict`` and ran ``base64.b64decode`` over whatever
+    ``content_b64`` held, with no ceiling: a few hundred megabytes of base64 from
+    an anonymous client became a few hundred megabytes of ``bytes`` in the API
+    process.  The UI flips one byte of one artifact, so the artifact cap is the
+    honest bound.
+    """
+
+    content_b64: str = Field(default="", max_length=(20 * 1024 * 1024 * 4) // 3 + 8)
+    expected_sha256: str = Field(default="", max_length=66)
 
 
 # ── Verification ────────────────────────────────────────────────────────────
@@ -338,7 +371,7 @@ class NotificationOut(BaseModel):
 
 
 class MarkReadIn(BaseModel):
-    ids: list[uuid.UUID] | None = None
+    ids: list[uuid.UUID] | None = Field(default=None, max_length=500)
 
 
 class NotificationPreferenceIn(BaseModel):

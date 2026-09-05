@@ -45,17 +45,65 @@ const STRIP_RESPONSE = new Set([
   "content-length",
 ]);
 
+/**
+ * `x-forwarded-*` are client-controlled unless a reverse proxy that *overwrites*
+ * them sits in front.  Next fills `x-forwarded-for` from the socket address with
+ * `??=` (base-server.js), so it only does so when the caller omitted the header;
+ * a caller that sends its own value has that value passed straight through, and
+ * the backend's rate limiter reads the first hop of the chain.  Forwarding it
+ * verbatim therefore let one caller present a fresh "address" per request and
+ * empty the per-IP bucket on register, resend-verification and forgot-password.
+ *
+ * Default: do not forward it, and let the backend fall back to the socket
+ * address.  Set `TRUST_PROXY_HEADERS=true` only when a load balancer that
+ * replaces the header is actually in front of this server.
+ */
+const TRUST_PROXY_HEADERS = process.env.TRUST_PROXY_HEADERS === "true";
+const FORWARDED = ["x-forwarded-for", "x-forwarded-host", "x-forwarded-proto", "forwarded"];
+
+/** The same typed envelope the client's `ApiError` already understands. */
+function badRequest(request: NextRequest, message: string): Response {
+  return Response.json(
+    {
+      error: {
+        code: "BAD_REQUEST",
+        message,
+        details: {},
+        request_id: request.headers.get("x-request-id") ?? "",
+      },
+    },
+    { status: 400, headers: { "cache-control": "no-store" } },
+  );
+}
+
 async function proxy(request: NextRequest, path: string[]): Promise<Response> {
   const search = request.nextUrl.search;
   const target = `${BACKEND}/api/${path.map(encodeURIComponent).join("/")}${search}`;
 
+  // Defence in depth.  `encodeURIComponent` already stops a segment from adding
+  // a slash, a scheme or a `..`, and Next rejects an encoded traversal before the
+  // handler runs -- but the guarantee that matters is "this request lands under
+  // ${BACKEND}/api/", so assert it on the resolved URL rather than on the
+  // construction that happens to produce it today.
+  let url: URL;
+  let base: URL;
+  try {
+    url = new URL(target);
+    base = new URL(`${BACKEND}/api/`);
+  } catch {
+    return badRequest(request, "The API path could not be resolved.");
+  }
+  if (url.origin !== base.origin || !url.pathname.startsWith(base.pathname)) {
+    return badRequest(request, "The API path resolved outside the backend.");
+  }
+
   const headers = new Headers();
   request.headers.forEach((value, key) => {
-    if (!STRIP_REQUEST.has(key.toLowerCase())) headers.set(key, value);
+    const name = key.toLowerCase();
+    if (STRIP_REQUEST.has(name)) return;
+    if (FORWARDED.includes(name) && !TRUST_PROXY_HEADERS) return;
+    headers.set(key, value);
   });
-  // The backend reads the original client address for per-IP rate limiting.
-  const forwarded = request.headers.get("x-forwarded-for");
-  headers.set("x-forwarded-for", forwarded ?? "127.0.0.1");
 
   const hasBody = !["GET", "HEAD"].includes(request.method);
 

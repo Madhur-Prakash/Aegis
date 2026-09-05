@@ -13,6 +13,7 @@
  * links but replays to a different total is still a broken ledger.
  */
 
+import { Tick } from "@/components/ui/icons";
 import { Meta } from "@/components/ui/StateChip";
 import { Button, ErrorBlock, Hash, Loading, Panel, ScrollX } from "@/components/ui/primitives";
 import { Reveal } from "@/components/ui/Reveal";
@@ -60,7 +61,7 @@ export function LedgerPanel({ dealId }: { dealId: string }) {
                 borderColor: verdict.data.ok ? "var(--sig-pass-edge)" : "var(--sig-fail-edge)",
               }}
             >
-              <span aria-hidden>{verdict.data.ok ? "✓" : "✕"}</span>
+              <Tick ok={verdict.data.ok} />
               {verdict.data.ok
                 ? t("provenance.chainIntact")
                 : t("provenance.chainBroken", { index: String(verdict.data.broken_index ?? -1) })}

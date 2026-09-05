@@ -471,6 +471,7 @@
             "items": {
               "$ref": "#/components/schemas/ClauseIn"
             },
+            "maxItems": 32,
             "title": "Clauses",
             "type": "array"
           },
@@ -478,6 +479,7 @@
             "items": {
               "type": "string"
             },
+            "maxItems": 16,
             "title": "Required Artifact Types",
             "type": "array"
           },
@@ -538,6 +540,7 @@
             "items": {
               "$ref": "#/components/schemas/MilestoneIn"
             },
+            "maxItems": 64,
             "title": "Milestones",
             "type": "array"
           },
@@ -904,6 +907,7 @@
                   "format": "uuid",
                   "type": "string"
                 },
+                "maxItems": 500,
                 "type": "array"
               },
               {
@@ -1356,6 +1360,31 @@
         "title": "PreferencesIn",
         "type": "object"
       },
+      "ProofStepIn": {
+        "description": "One sibling on the path from a leaf to the root.",
+        "properties": {
+          "hash": {
+            "maxLength": 66,
+            "minLength": 64,
+            "title": "Hash",
+            "type": "string"
+          },
+          "position": {
+            "enum": [
+              "left",
+              "right"
+            ],
+            "title": "Position",
+            "type": "string"
+          }
+        },
+        "required": [
+          "position",
+          "hash"
+        ],
+        "title": "ProofStepIn",
+        "type": "object"
+      },
       "RefreshIn": {
         "properties": {
           "refresh_token": {
@@ -1504,6 +1533,25 @@
         "title": "SignTermsIn",
         "type": "object"
       },
+      "TamperCheckIn": {
+        "description": "`POST /provenance/tamper-check` is public too, and it decodes what it is given.\n\nThe handler took a bare ``dict`` and ran ``base64.b64decode`` over whatever\n``content_b64`` held, with no ceiling: a few hundred megabytes of base64 from\nan anonymous client became a few hundred megabytes of ``bytes`` in the API\nprocess.  The UI flips one byte of one artifact, so the artifact cap is the\nhonest bound.",
+        "properties": {
+          "content_b64": {
+            "default": "",
+            "maxLength": 27962034,
+            "title": "Content B64",
+            "type": "string"
+          },
+          "expected_sha256": {
+            "default": "",
+            "maxLength": 66,
+            "title": "Expected Sha256",
+            "type": "string"
+          }
+        },
+        "title": "TamperCheckIn",
+        "type": "object"
+      },
       "TokenOut": {
         "properties": {
           "access_token": {
@@ -1593,6 +1641,7 @@
         "type": "object"
       },
       "VerifyProofIn": {
+        "description": "`POST /evidence/verify` is public, so its bounds are load-bearing.\n\n``proof`` used to be an unvalidated ``list[dict[str, str]]``: unbounded in\nlength, and free to carry a ``position`` the verifier does not understand or\na ``hash`` that is not hex, which reached ``bytes.fromhex`` and came back as\na 500 rather than \"that proof does not verify\".  A bundle holds a few dozen\nartifacts, so 64 steps is a tree of 2^64 leaves and then some.",
         "properties": {
           "leaf": {
             "maxLength": 66,
@@ -1602,11 +1651,9 @@
           },
           "proof": {
             "items": {
-              "additionalProperties": {
-                "type": "string"
-              },
-              "type": "object"
+              "$ref": "#/components/schemas/ProofStepIn"
             },
+            "maxItems": 64,
             "title": "Proof",
             "type": "array"
           },
@@ -1619,7 +1666,6 @@
         },
         "required": [
           "leaf",
-          "proof",
           "root"
         ],
         "title": "VerifyProofIn",
@@ -3036,6 +3082,7 @@
     },
     "/api/v1/evidence/milestones/{milestone_id}/bundle": {
       "get": {
+        "description": "`null` means \"no evidence yet\"; a milestone you cannot see is a 404.\n\nSee the note on `attestation_for_milestone`: the milestone is resolved through\nthe tenant repo so those two cases are not both 200.",
         "operationId": "get_bundle_api_v1_evidence_milestones__milestone_id__bundle_get",
         "parameters": [
           {
@@ -4432,9 +4479,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "additionalProperties": true,
-                "title": "Payload",
-                "type": "object"
+                "$ref": "#/components/schemas/TamperCheckIn"
               }
             }
           },
@@ -4793,6 +4838,7 @@
     },
     "/api/v1/verification/milestones/{milestone_id}": {
       "get": {
+        "description": "`null` means \"not verified yet\"; a milestone you cannot see is a 404.\n\nResolving the milestone through the tenant repo first is what separates those\ntwo cases.  Without it, an org with no relationship to the deal got a 200 and\na `null` body -- no data, but the wrong status, and indistinguishable from\n\"verified nothing yet\" for a legitimate caller.",
         "operationId": "attestation_for_milestone_api_v1_verification_milestones__milestone_id__get",
         "parameters": [
           {

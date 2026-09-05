@@ -131,7 +131,8 @@ async def logout(request: Request, response: Response, user: UserDep, session: S
 
 
 @router.post("/verify-email", response_model=Ok)
-async def verify_email(payload: VerifyEmailIn, session: SessionDep) -> Ok:
+async def verify_email(payload: VerifyEmailIn, request: Request, session: SessionDep) -> Ok:
+    await rate_limit("auth:verify-email", _client_ip(request), settings.RATE_LIMIT_AUTH)
     await auth_service.verify_email(session, payload.token)
     await session.commit()
     return Ok()
@@ -142,6 +143,11 @@ async def resend_verification(
     payload: ResendVerificationIn, request: Request, session: SessionDep
 ) -> Ok:
     await rate_limit("auth:resend", _client_ip(request), "3/60")
+    # Per recipient as well as per source: an IP-only budget is only as good as
+    # the client's honesty about its own address, and the address here comes from
+    # `X-Forwarded-For`.  The email is not spoofable -- it is the thing being
+    # attacked -- so this bound holds however the request is routed.
+    await rate_limit("auth:resend:account", normalize_email(str(payload.email)), "3/60")
     from sqlalchemy import select
 
     from app.models.identity import User
@@ -161,13 +167,19 @@ async def resend_verification(
 @router.post("/forgot-password", response_model=Ok)
 async def forgot_password(payload: ForgotPasswordIn, request: Request, session: SessionDep) -> Ok:
     await rate_limit("auth:forgot", _client_ip(request), settings.RATE_LIMIT_AUTH)
+    await rate_limit(
+        "auth:forgot:account", normalize_email(str(payload.email)), settings.RATE_LIMIT_AUTH
+    )
     await auth_service.forgot_password(session, str(payload.email))
     await session.commit()
     return Ok()
 
 
 @router.post("/reset-password", response_model=Ok)
-async def reset_password(payload: ResetPasswordIn, response: Response, session: SessionDep) -> Ok:
+async def reset_password(
+    payload: ResetPasswordIn, request: Request, response: Response, session: SessionDep
+) -> Ok:
+    await rate_limit("auth:reset", _client_ip(request), settings.RATE_LIMIT_AUTH)
     await auth_service.reset_password(session, payload.token, payload.new_password)
     await session.commit()
     _clear_cookies(response)
@@ -176,8 +188,15 @@ async def reset_password(payload: ResetPasswordIn, response: Response, session: 
 
 @router.post("/change-password", response_model=Ok)
 async def change_password(
-    payload: ChangePasswordIn, response: Response, user: UserDep, session: SessionDep
+    payload: ChangePasswordIn,
+    request: Request,
+    response: Response,
+    user: UserDep,
+    session: SessionDep,
 ) -> Ok:
+    # Two Argon2id operations at 64 MiB each, on a route any signed-in account
+    # can call in a loop.
+    await rate_limit("auth:change-password", str(user.id), settings.RATE_LIMIT_AUTH)
     await auth_service.change_password(
         session, user, payload.current_password, payload.new_password
     )

@@ -10,18 +10,46 @@ from sqlalchemy import select
 
 from app.api.v1.schemas import ArtifactOut, BundleOut, VerifyProofIn
 from app.common.deps import MemberDep, RepoDep, SessionDep, ViewerDep
-from app.common.errors import ArtifactRejected, Conflict
+from app.common.errors import ArtifactRejected, Conflict, Forbidden
 from app.common.redis_client import rate_limit
 from app.config.settings import settings
+from app.db.repo import TenantRepo
 from app.deals.states import MilestoneEvent, milestone_can
 from app.evidence import service as evidence_service
 from app.ledger.service import append_ledger, transition_milestone
-from app.models.commerce import Artifact, EvidenceBundle
+from app.models.commerce import Artifact, Deal, EvidenceBundle
 from app.models.enums import ArtifactType, LedgerEventType, NotificationKind
 from app.realtime.hub import get_hub
 from app.storage.store import get_store, verify_presigned
 
 router = APIRouter(prefix="/evidence", tags=["evidence"])
+
+# How much of an upload is read into memory before it is refused.  One byte over
+# the cap is enough to know the file is too large, and reading only that much is
+# the difference between a 422 and a process that buffers whatever the client
+# felt like sending.
+_UPLOAD_READ_CEILING = settings.MAX_ARTIFACT_BYTES + 1
+
+
+async def _require_selling_org(repo: TenantRepo, deal_id: uuid.UUID, org_id: uuid.UUID) -> Deal:
+    """Only the seller may put artifacts in a milestone's evidence bundle.
+
+    The milestone is visible to both parties, and the open bundle is shared:
+    ``get_or_create_open_bundle`` returns whichever unsubmitted bundle exists for
+    the milestone regardless of who is asking.  So without this the *buyer* could
+    add an artifact to the seller's bundle -- a fabricated invoice whose totals
+    do not add up, say -- and the evidence-integrity pre-check would turn it into
+    a required UNVERIFIABLE clause that by I3 can never auto-release.  That is a
+    buyer veto of a release, which docs/SECURITY.md says does not exist.
+    """
+    deal = await repo.get_deal(deal_id)
+    if org_id != deal.org_id_seller:
+        raise Forbidden(
+            code="ONLY_SELLER_SUBMITS_EVIDENCE",
+            message="Only the selling organization can add evidence to this milestone.",
+            details={"deal_id": str(deal.id)},
+        )
+    return deal
 
 
 def _artifact_view(artifact: Artifact) -> ArtifactOut:
@@ -90,7 +118,17 @@ async def upload(
             details={"allowed": [t.value for t in ArtifactType]},
         )
     milestone = await repo.get_milestone(milestone_id)
-    data = await file.read()
+    await _require_selling_org(repo, milestone.deal_id, membership.org_id)
+    # Bounded read: `enforce_size` further down runs *after* the bytes are already
+    # in memory, so an unbounded `file.read()` let anyone with an account decide
+    # how much of the process's memory to consume with a single multipart body.
+    data = await file.read(_UPLOAD_READ_CEILING)
+    if len(data) > settings.MAX_ARTIFACT_BYTES:
+        raise ArtifactRejected(
+            code="FILE_TOO_LARGE",
+            message="The file exceeds the maximum size.",
+            details={"max_bytes": settings.MAX_ARTIFACT_BYTES},
+        )
     bundle = await evidence_service.get_or_create_open_bundle(
         session, milestone, membership.org_id, membership.user.id
     )
@@ -112,6 +150,7 @@ async def submit(
     milestone_id: uuid.UUID, membership: MemberDep, repo: RepoDep, session: SessionDep
 ) -> BundleOut:
     milestone = await repo.get_milestone(milestone_id)
+    await _require_selling_org(repo, milestone.deal_id, membership.org_id)
     deal = await repo.get_deal_for_update(milestone.deal_id)
     bundle = await repo.latest_bundle(milestone_id)
     if bundle is None:
@@ -175,7 +214,19 @@ async def download(token: str) -> Response:
     there is no public path to an artifact."""
     key = verify_presigned(token)
     data = get_store().get(key)
-    return Response(content=data, media_type="application/octet-stream")
+    # `text/plain` is an accepted artifact type, so an artifact can hold markup.
+    # The API is same-origin with the app through the Next rewrite, so a browser
+    # that sniffed one of these into HTML would be running script on the app's
+    # own origin.  Declare the type and refuse the sniff.
+    return Response(
+        content=data,
+        media_type="application/octet-stream",
+        headers={
+            "X-Content-Type-Options": "nosniff",
+            "Content-Disposition": "attachment",
+            "Cache-Control": "private, no-store",
+        },
+    )
 
 
 @router.post("/verify", response_model=dict)
@@ -183,6 +234,6 @@ async def verify_proof(payload: VerifyProofIn) -> dict:
     """Public Merkle verification: ``(leaf, proof, root)``.  Used by the tamper demo."""
     return evidence_service.verify_external_proof(
         payload.leaf.removeprefix("0x"),
-        payload.proof,
+        [{"position": s.position, "hash": s.hash.removeprefix("0x")} for s in payload.proof],
         payload.root.removeprefix("0x"),
     )

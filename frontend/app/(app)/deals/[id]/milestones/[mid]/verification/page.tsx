@@ -13,6 +13,7 @@
  * otherwise.
  */
 
+import { Tick } from "@/components/ui/icons";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 
@@ -155,7 +156,7 @@ export default function VerificationPage() {
                     className="micro"
                     style={{ color: check.ok ? "var(--sig-pass)" : "var(--sig-fail)" }}
                   >
-                    <span aria-hidden>{check.ok ? "✓" : "✕"}</span>{" "}
+                    <Tick ok={check.ok} />{" "}
                     {check.ok ? t("verdict.PASS") : t("verdict.FAIL")}
                   </span>
                 </div>

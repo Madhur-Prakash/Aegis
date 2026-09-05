@@ -13,6 +13,7 @@
  * impossible; showing it anyway is how the invariant is meant seriously.
  */
 
+import { Tick } from "@/components/ui/icons";
 import { motion } from "motion/react";
 
 import { CountUp } from "@/components/ui/primitives";
@@ -75,7 +76,7 @@ export function MoneyBar({ money }: { money: Money }) {
 
       <p className="money-sum micro" data-balanced={balanced}>
         {t("deal.sumLine")} <CountUp value={funded} format={inr} />{" "}
-        <span aria-hidden>{balanced ? "✓" : "✕"}</span>
+        <Tick ok={balanced} />
         <span className="visually-hidden">
           {balanced ? t("deal.conserved") : t("deal.broken")}
         </span>

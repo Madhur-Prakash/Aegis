@@ -128,6 +128,37 @@ async def owner_count(session: AsyncSession, org_id: uuid.UUID) -> int:
     return int((await session.execute(stmt)).scalar() or 0)
 
 
+def _require_outranks(
+    target_role: OrgRole,
+    actor_role: OrgRole,
+    target_user_id: uuid.UUID,
+    actor_user_id: uuid.UUID,
+) -> None:
+    """Nobody may act on a member who outranks them.  Peers and self are fine.
+
+    ``AdminDep`` gates these routes on ADMIN, and the only further checks were
+    "granting OWNER needs OWNER" and last-owner protection.  Between them an
+    ADMIN could demote an OWNER to VIEWER, or remove an OWNER outright, as long
+    as one other owner remained: an admin unilaterally stripping the people above
+    them.  Rank has to be tested against the *target's* role, not only against
+    the role being granted.
+
+    Deliberately ``>`` and not ``>=``: an admin managing another admin, or an
+    owner an owner, is a peer action that this product has always allowed and
+    that last-owner protection already bounds.  ``transfer_ownership`` relies on
+    both halves of that -- it promotes the incoming owner, then demotes the
+    outgoing one, who is the actor.
+    """
+    if target_user_id == actor_user_id:
+        return
+    if ROLE_RANK[target_role] > ROLE_RANK[actor_role]:
+        raise Conflict(
+            code="ROLE_RANK_INSUFFICIENT",
+            message="You cannot act on a member whose role is above your own.",
+            details={"your_role": str(actor_role), "their_role": str(target_role)},
+        )
+
+
 async def change_role(
     session: AsyncSession,
     *,
@@ -153,6 +184,7 @@ async def change_role(
             code="OWNER_GRANT_REQUIRES_OWNER",
             message="Only an owner can grant ownership.",
         )
+    _require_outranks(member.role, actor_role, target_user_id, actor_user_id)
     if (
         member.role == OrgRole.OWNER
         and new_role != OrgRole.OWNER
@@ -185,7 +217,12 @@ async def change_role(
 
 
 async def remove_member(
-    session: AsyncSession, *, org_id: uuid.UUID, target_user_id: uuid.UUID, actor_user_id: uuid.UUID
+    session: AsyncSession,
+    *,
+    org_id: uuid.UUID,
+    target_user_id: uuid.UUID,
+    actor_user_id: uuid.UUID,
+    actor_role: OrgRole,
 ) -> None:
     member = (
         await session.execute(
@@ -197,6 +234,7 @@ async def remove_member(
     ).scalar_one_or_none()
     if member is None:
         raise NotFound(details={"type": "OrganizationMember", "user_id": str(target_user_id)})
+    _require_outranks(OrgRole(member.role), actor_role, target_user_id, actor_user_id)
     if member.role == OrgRole.OWNER and await owner_count(session, org_id) <= 1:
         raise LastOwnerProtected()
     await session.delete(member)

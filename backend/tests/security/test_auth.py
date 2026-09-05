@@ -418,6 +418,86 @@ async def test_logout_revokes_the_session(client):
     assert reused.status_code == 401, "logout must invalidate the access token too"
 
 
+@pytest.mark.asyncio
+async def test_logout_with_somebody_elses_refresh_cookie_does_not_sign_them_out(client):
+    """The refresh cookie has to belong to the caller.
+
+    `logout` looked the token up by hash and revoked *its* family without ever
+    checking whose it was, so a signed-in account presenting another user's
+    refresh token signed that user out -- and left its own session running,
+    which is not what the button says either.
+    """
+    await register(client, "victim@aegistest.dev")
+    victim = await client.post(
+        "/api/v1/auth/login", json={"email": "victim@aegistest.dev", "password": PASSWORD}
+    )
+    victim_access = victim.json()["access_token"]
+    victim_refresh = victim.json()["refresh_token"]
+
+    await register(client, "attacker@aegistest.dev")
+    attacker = await client.post(
+        "/api/v1/auth/login", json={"email": "attacker@aegistest.dev", "password": PASSWORD}
+    )
+    attacker_access = attacker.json()["access_token"]
+
+    out = await client.post(
+        "/api/v1/auth/logout",
+        headers={"Authorization": f"Bearer {attacker_access}"},
+        cookies={"aegis_refresh": victim_refresh},
+    )
+    assert out.status_code == 200
+
+    still_signed_in = await client.get(
+        "/api/v1/auth/me", headers={"Authorization": f"Bearer {victim_access}"}
+    )
+    assert still_signed_in.status_code == 200, "the victim's session must survive"
+
+    # And the caller's own session is the one that ended.
+    own = await client.get(
+        "/api/v1/auth/me", headers={"Authorization": f"Bearer {attacker_access}"}
+    )
+    assert own.status_code == 401
+
+
+# ── account enumeration ─────────────────────────────────────────────────────
+@pytest.mark.asyncio
+async def test_a_login_for_an_unknown_account_still_spends_a_password_verification(
+    client, monkeypatch
+):
+    """Argon2id at 64 MiB is tens of milliseconds, and a clock anyone can read.
+
+    Returning `InvalidCredentials` without hashing anything when the account did
+    not exist made "no such account" and "wrong password" trivially separable by
+    response time, whatever the body said.  Asserting on the *work* rather than
+    on the wall clock keeps the test honest on a loaded machine.
+    """
+    import app.auth.service as auth_service
+
+    calls: list[int] = []
+    real = auth_service.dummy_verify
+    monkeypatch.setattr(auth_service, "dummy_verify", lambda: (calls.append(1), real())[1])
+
+    await register(client, "known@aegistest.dev")
+
+    unknown = await client.post(
+        "/api/v1/auth/login",
+        json={"email": "nobody-at-all@aegistest.dev", "password": PASSWORD},
+    )
+    assert unknown.status_code == 401
+    assert calls == [1], "an unknown account must still pay for a hash comparison"
+
+    wrong = await client.post(
+        "/api/v1/auth/login", json={"email": "known@aegistest.dev", "password": "wrong-password-x"}
+    )
+    assert wrong.status_code == 401
+    # The real hash was verified on this path, so no equaliser was needed.
+    assert calls == [1]
+
+    # Indistinguishable in the body, too.
+    assert unknown.json()["error"]["code"] == wrong.json()["error"]["code"]
+    assert unknown.json()["error"]["message"] == wrong.json()["error"]["message"]
+
+
 # ── rate limiting ───────────────────────────────────────────────────────────
 @pytest.mark.asyncio
 async def test_login_is_rate_limited(client):
@@ -534,6 +614,175 @@ async def test_the_last_owner_cannot_be_demoted(client, parties):
                 actor_user_id=parties["buyer_user_id"],
                 actor_role=OrgRole.OWNER,
             )
+
+
+async def _admin_alongside_the_owner(client, parties) -> dict[str, str]:
+    """A second member of the buyer org, ADMIN, signed in."""
+    import datetime as dt
+
+    from app.auth.security import hash_password
+    from app.db.session import get_session_factory
+    from app.models.enums import OrgRole
+    from app.models.identity import OrganizationMember, User
+
+    async with get_session_factory()() as session:
+        admin = User(
+            email="admin@aegistest.dev",
+            email_normalized="admin@aegistest.dev",
+            name="An Admin",
+            password_hash=hash_password(PASSWORD),
+            email_verified_at=dt.datetime.now(dt.UTC),
+            active_org_id=parties["buyer_org_id"],
+        )
+        session.add(admin)
+        await session.flush()
+        session.add(
+            OrganizationMember(org_id=parties["buyer_org_id"], user_id=admin.id, role=OrgRole.ADMIN)
+        )
+        await session.commit()
+
+    login = await client.post(
+        "/api/v1/auth/login", json={"email": "admin@aegistest.dev", "password": PASSWORD}
+    )
+    assert login.status_code == 200, login.text
+    return {"Authorization": f"Bearer {login.json()['access_token']}"}
+
+
+@pytest.mark.asyncio
+async def test_an_admin_cannot_demote_an_owner(client, parties):
+    """`AdminDep` gates the route, and the only further checks were "granting
+    OWNER needs OWNER" and last-owner protection.  Neither says anything about
+    the *target's* rank, so an admin could strip the people above them as long as
+    a second owner existed."""
+    from app.db.session import get_session_factory
+    from app.models.enums import OrgRole
+    from app.models.identity import OrganizationMember
+
+    headers = await _admin_alongside_the_owner(client, parties)
+
+    # A second owner, so last-owner protection is not what refuses this.
+    async with get_session_factory()() as session:
+        session.add(
+            OrganizationMember(
+                org_id=parties["buyer_org_id"],
+                user_id=parties["outsider_user_id"],
+                role=OrgRole.OWNER,
+            )
+        )
+        await session.commit()
+
+    response = await client.patch(
+        f"/api/v1/organizations/members/{parties['buyer_user_id']}/role",
+        headers=headers,
+        json={"role": "VIEWER"},
+    )
+    assert response.status_code == 409, response.text
+    assert response.json()["error"]["code"] == "ROLE_RANK_INSUFFICIENT"
+
+    async with get_session_factory()() as session:
+        member = (
+            await session.execute(
+                select(OrganizationMember).where(
+                    OrganizationMember.org_id == parties["buyer_org_id"],
+                    OrganizationMember.user_id == parties["buyer_user_id"],
+                )
+            )
+        ).scalar_one()
+        assert str(member.role) == "OWNER"
+
+
+@pytest.mark.asyncio
+async def test_an_admin_cannot_remove_an_owner(client, parties):
+    from app.db.session import get_session_factory
+    from app.models.enums import OrgRole
+    from app.models.identity import OrganizationMember
+
+    headers = await _admin_alongside_the_owner(client, parties)
+    async with get_session_factory()() as session:
+        session.add(
+            OrganizationMember(
+                org_id=parties["buyer_org_id"],
+                user_id=parties["outsider_user_id"],
+                role=OrgRole.OWNER,
+            )
+        )
+        await session.commit()
+
+    response = await client.delete(
+        f"/api/v1/organizations/members/{parties['buyer_user_id']}", headers=headers
+    )
+    assert response.status_code == 409
+    assert response.json()["error"]["code"] == "ROLE_RANK_INSUFFICIENT"
+
+
+@pytest.mark.asyncio
+async def test_an_admin_may_still_manage_members_below_them(client, parties):
+    """The rank check must not cost an admin the job they are there to do."""
+    import datetime as dt
+
+    from app.auth.security import hash_password
+    from app.db.session import get_session_factory
+    from app.models.enums import OrgRole
+    from app.models.identity import OrganizationMember, User
+
+    headers = await _admin_alongside_the_owner(client, parties)
+    async with get_session_factory()() as session:
+        junior = User(
+            email="junior@aegistest.dev",
+            email_normalized="junior@aegistest.dev",
+            name="A Member",
+            password_hash=hash_password(PASSWORD),
+            email_verified_at=dt.datetime.now(dt.UTC),
+        )
+        session.add(junior)
+        await session.flush()
+        session.add(
+            OrganizationMember(
+                org_id=parties["buyer_org_id"], user_id=junior.id, role=OrgRole.MEMBER
+            )
+        )
+        await session.commit()
+        junior_id = junior.id
+
+    promoted = await client.patch(
+        f"/api/v1/organizations/members/{junior_id}/role",
+        headers=headers,
+        json={"role": "VIEWER"},
+    )
+    assert promoted.status_code == 200, promoted.text
+
+    removed = await client.delete(f"/api/v1/organizations/members/{junior_id}", headers=headers)
+    assert removed.status_code == 200, removed.text
+
+
+@pytest.mark.asyncio
+async def test_transfer_ownership_still_works(client, parties):
+    """It demotes the acting owner, which the rank check has to keep allowing."""
+    from app.db.session import get_session_factory
+    from app.models.identity import OrganizationMember
+
+    await _admin_alongside_the_owner(client, parties)
+    owner_login = await client.post(
+        "/api/v1/auth/login",
+        json={"email": "buyer@aegistest.dev", "password": parties["password"]},
+    )
+    owner = {"Authorization": f"Bearer {owner_login.json()['access_token']}"}
+
+    async with get_session_factory()() as session:
+        admin_member = (
+            await session.execute(
+                select(OrganizationMember).where(
+                    OrganizationMember.org_id == parties["buyer_org_id"],
+                    OrganizationMember.role == "ADMIN",
+                )
+            )
+        ).scalar_one()
+        admin_user_id = admin_member.user_id
+
+    response = await client.post(
+        f"/api/v1/organizations/transfer-ownership/{admin_user_id}", headers=owner
+    )
+    assert response.status_code == 200, response.text
 
 
 # ── the DEMO_MODE affordance ────────────────────────────────────────────────

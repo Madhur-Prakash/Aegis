@@ -129,6 +129,7 @@ async def remove_member(user_id: uuid.UUID, membership: AdminDep, session: Sessi
         org_id=membership.org_id,
         target_user_id=user_id,
         actor_user_id=membership.user.id,
+        actor_role=membership.role,
     )
     await session.commit()
     return Ok()

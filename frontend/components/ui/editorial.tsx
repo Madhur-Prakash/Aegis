@@ -293,6 +293,149 @@ export function ProofStrip({
   );
 }
 
+// ── The decision scale ─────────────────────────────────────────────
+/**
+ * The policy as an object: a vertical scale from 0 to 1 with the three bands
+ * the thresholds cut it into, and one point on it -- the confidence of the
+ * verdict quoted beside it.
+ *
+ * It sits opposite the pull quote. (Of the DESIGN.md references, Wise pairs
+ * large type with a simplified flow diagram and reserves colour for status;
+ * Mastercard sets an oversized numeral against hairline-ruled structure.)
+ * Every value is the page's own: the thresholds are invariant I3, the point is
+ * the quoted verdict's confidence, and the bands wear the three signal hues
+ * because the bands *are* the three verdict classes.
+ *
+ * It also shows the thing the section is about. 0.197 is below the reject
+ * line, and the verdict was not rejected -- because it was UNVERIFIABLE, and
+ * an UNVERIFIABLE verdict never auto-settles in either direction.
+ */
+export function DecisionScale({
+  release,
+  reject,
+  point,
+  copy,
+}: {
+  release: number;
+  reject: number;
+  point: number;
+  copy: {
+    title: string;
+    release: string;
+    escalate: string;
+    reject: string;
+    confidence: string;
+    human: string;
+    rule: string;
+  };
+}) {
+  const reduced = useReducedMotion();
+  const duplicate = useIsDuplicate();
+  // 1 at the top, 0 at the bottom: the way a confidence is read.
+  const at = (v: number) => `${((1 - v) * 100).toFixed(2)}%`;
+  const still = reduced || duplicate;
+
+  return (
+    <figure className="scale" aria-label={copy.title}>
+      <Reveal variant="blurUp">
+        <figcaption className="nano">{copy.title}</figcaption>
+      </Reveal>
+      <div className="scale-body">
+        <div className="scale-rail">
+          <motion.span
+            className="scale-line"
+            initial={still ? { scaleY: 1 } : { scaleY: 0 }}
+            whileInView={still ? undefined : { scaleY: 1 }}
+            viewport={still ? undefined : inView}
+            transition={{ duration: D.slow, ease: E.expo as [number, number, number, number] }}
+            aria-hidden
+          />
+          <span className="scale-band scale-band--release" style={{ top: 0, height: at(release) }} />
+          <span
+            className="scale-band scale-band--escalate"
+            style={{ top: at(release), height: `${((release - reject) * 100).toFixed(2)}%` }}
+          />
+          <span
+            className="scale-band scale-band--reject"
+            style={{ top: at(reject), height: `${(reject * 100).toFixed(2)}%` }}
+          />
+          <span className="scale-tick" style={{ top: at(release) }}>
+            <span className="nano">{copy.release}</span>
+          </span>
+          <span className="scale-tick scale-tick--mid" style={{ top: at((release + reject) / 2) }}>
+            <span className="nano">{copy.escalate}</span>
+          </span>
+          <span className="scale-tick" style={{ top: at(reject) }}>
+            <span className="nano">{copy.reject}</span>
+          </span>
+          <Reveal as="span" variant="chipPop" index={4} className="scale-point" style={{ top: at(point) }} />
+        </div>
+        <div className="scale-read">
+          <Reveal index={2} className="stack-tight">
+            <span className="nano">{copy.confidence}</span>
+            <span className="scale-num num">{point.toFixed(3)}</span>
+          </Reveal>
+          <Reveal index={3} className="stack-tight">
+            <span className="scale-human micro">{copy.human}</span>
+            <p className="scale-rule">{copy.rule}</p>
+          </Reveal>
+        </div>
+      </div>
+    </figure>
+  );
+}
+
+// ── Where a figure comes from ───────────────────────────────────────
+/**
+ * The provenance of every number on the page, as four stations on a rail:
+ * the command that measured it, the file it wrote, the route that serves it,
+ * and this page reading it. The paragraph beside it says the same thing in
+ * prose; this says it as structure, in the mono the data wears.
+ *
+ * Nothing here is decorative copy. The file path and the route are the real
+ * ones (`_EVAL_SUMMARY` in misc_router.py), and the date and provider come
+ * from the summary itself -- absent when the summary is, never filled in.
+ */
+export function FigureProvenance({
+  note,
+  copy,
+}: {
+  /** The first station's detail: when it ran and what scored it. */
+  note?: string;
+  copy: { title: string; measured: string; written: string; served: string; read: string };
+}) {
+  const peers = usePeerHover();
+  const stations = [
+    { label: copy.measured, value: "make eval", note },
+    { label: copy.written, value: "backend/evals/out/summary.json" },
+    { label: copy.served, value: "GET /api/v1/health/eval-summary" },
+    { label: copy.read, value: "/" },
+  ];
+
+  return (
+    <figure className="prov" aria-label={copy.title}>
+      <Reveal variant="blurUp">
+        <figcaption className="nano">{copy.title}</figcaption>
+      </Reveal>
+      <ol className="prov-list" {...peers.group}>
+        {stations.map((station, index) => (
+          <Reveal as="li" key={station.value} index={index} className="prov-station">
+            {/* Peer bindings on the inner row, not the animated <li>. */}
+            <span className="prov-row" {...peers.peer(station.value)}>
+              <span className="nano num prov-index">{String(index + 1).padStart(2, "0")}</span>
+              <span className="prov-body">
+                <span className="nano">{station.label}</span>
+                <code className="prov-value">{station.value}</code>
+                {station.note ? <span className="nano prov-note">{station.note}</span> : null}
+              </span>
+            </span>
+          </Reveal>
+        ))}
+      </ol>
+    </figure>
+  );
+}
+
 // ── Scroll-linked display type ──────────────────────────────────────────────
 /**
  * Oversized type that moves horizontally with scroll and is *meant* to be

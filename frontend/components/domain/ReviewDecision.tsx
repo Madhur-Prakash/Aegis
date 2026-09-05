@@ -15,6 +15,7 @@
  * amount to the paise (I4).
  */
 
+import { Tick } from "@/components/ui/icons";
 import { useMemo, useState } from "react";
 
 import { Meta } from "@/components/ui/StateChip";
@@ -148,7 +149,7 @@ export function ReviewDecision({
                 label={t("review.balances")}
                 value={
                   <span style={{ color: splitValid ? "var(--sig-pass)" : "var(--sig-fail)" }}>
-                    {splitValid ? "✓" : "✕"}
+                    <Tick ok={splitValid} />
                   </span>
                 }
               />

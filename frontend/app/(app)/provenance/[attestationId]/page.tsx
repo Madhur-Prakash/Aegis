@@ -13,6 +13,7 @@
  * which is why the field is rendered at all rather than assumed.
  */
 
+import { Tick } from "@/components/ui/icons";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 
@@ -72,7 +73,7 @@ export default function ProvenancePage() {
               tone={record.signature_verified ? "pass" : "fail"}
               index={2}
             >
-              <span aria-hidden>{record.signature_verified ? "✓" : "✕"}</span>
+              <Tick ok={record.signature_verified} />
               {record.signature_verified
                 ? t("provenance.signatureValid")
                 : t("provenance.signatureInvalid")}

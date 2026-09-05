@@ -57,7 +57,9 @@ export function Reveal({
   className,
   style,
 }: {
-  children: ReactNode;
+  /** Optional: a reveal can be a decorative element with no content, such as
+   *  the point on the decision scale. */
+  children?: ReactNode;
   index?: number;
   variant?: Variant;
   as?: "div" | "li" | "tr" | "section" | "span" | "article";

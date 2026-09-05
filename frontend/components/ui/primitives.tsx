@@ -8,6 +8,7 @@
  * colour, raw duration or inline easing anywhere in this file (spec 25.1).
  */
 
+import { CircleCheck } from "lucide-react";
 import { motion, useMotionValue, useSpring, useTransform } from "motion/react";
 import type { ReactNode } from "react";
 import { useEffect, useId, useState } from "react";
@@ -43,14 +44,25 @@ export function Button({
 }
 
 /** The capsule from the reference screenshot: a pill with a leading live dot. */
+/**
+ * A pill with a state icon. The icon is a Lucide check in the tone's colour --
+ * it replaced a coloured dot, which read as decoration; a check reads as the
+ * claim the pill is making.
+ */
 export function Capsule({
   children,
-  dotTone = "pass",
+  tone = "pass",
   ...rest
-}: React.ButtonHTMLAttributes<HTMLButtonElement> & { dotTone?: "pass" | "unverified" | "fail" }) {
+}: React.ButtonHTMLAttributes<HTMLButtonElement> & { tone?: "pass" | "unverified" | "fail" }) {
   return (
     <button className="capsule" data-cursor="" {...rest}>
-      <span className="capsule-dot" style={{ background: `var(--sig-${dotTone})` }} aria-hidden />
+      <CircleCheck
+        className="capsule-icon"
+        size={14}
+        strokeWidth={2.25}
+        style={{ color: `var(--sig-${tone})` }}
+        aria-hidden
+      />
       {children}
     </button>
   );

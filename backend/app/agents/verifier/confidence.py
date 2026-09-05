@@ -116,6 +116,17 @@ def calibrate(raw: float) -> tuple[float, str]:
     return round(clipped, 3), version
 
 
+def _clamp_unit(value: Any) -> float:
+    """A model-supplied score, forced into [0, 1].  NaN and infinity become 0.0."""
+    try:
+        number = float(value or 0.0)
+    except (TypeError, ValueError):
+        return 0.0
+    if number != number or number in (float("inf"), float("-inf")):
+        return 0.0
+    return max(0.0, min(1.0, number))
+
+
 def compute_confidence(
     *,
     clause_verdicts: list[dict[str, Any]],
@@ -132,8 +143,18 @@ def compute_confidence(
     )
     verifiable_fraction = deterministic_passed / total_required
 
+    # `clause_confidence` is the one number in this computation that comes from
+    # the model, so it is the one number an injected prompt can choose.  Clamped
+    # to [0, 1] per clause, not merely at the end: `calibrate` clips its input,
+    # but it clips *after* the unverifiable penalty has been subtracted, so a
+    # single clause reporting 1e6 washed the penalty out entirely and drove the
+    # calibrated confidence to 1.0.  That turns an ESCALATE -- a milestone a
+    # human was supposed to look at -- into an auto-RELEASE, which is precisely
+    # the model reaching the money that I2 exists to prevent.  A non-finite value
+    # is treated as no answer at all rather than propagating a NaN through the
+    # comparison in `decide`, where every ordering test would silently be False.
     judged = [
-        float(v.get("clause_confidence") or 0.0)
+        _clamp_unit(v.get("clause_confidence"))
         for v in clause_verdicts
         if v.get("verdict") != "UNVERIFIABLE"
     ]

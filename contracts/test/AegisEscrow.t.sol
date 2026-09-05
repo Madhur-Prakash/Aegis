@@ -316,6 +316,100 @@ contract AegisEscrowTest is Test {
         )));
     }
 
+    // ── zero-sentinel guards ────────────────────────────────────────────────
+    /// A zero `attestationHash` is the "nothing anchored" sentinel, so accepting
+    /// one left the record reading as unanchored and the same milestone could be
+    /// anchored twice, with a second decision and a second attestor.
+    function test_anchorWithZeroAttestationHash_reverts() public {
+        _open(3, 0);
+        bytes memory sig = _sign(1, evidenceRoot, bytes32(0), AegisEscrow.Decision.RELEASE, 9400);
+        vm.prank(operator);
+        vm.expectRevert(AegisEscrow.ZeroAttestationHash.selector);
+        escrow.anchorAttestation(
+            dealId, 1, evidenceRoot, bytes32(0), AegisEscrow.Decision.RELEASE, 9400, sig
+        );
+    }
+
+    /// A zero `amountPaise` is the "not settled" sentinel, so it recorded a
+    /// settlement that still read as unsettled -- `AlreadySettled` never fired
+    /// and the rail reference could be rewritten afterwards.
+    function test_settlementOfZeroAmount_reverts() public {
+        _open(3, 0);
+        bytes memory sig = _sign(1, evidenceRoot, attestationHash, AegisEscrow.Decision.RELEASE, 9400);
+        vm.startPrank(operator);
+        escrow.anchorAttestation(
+            dealId, 1, evidenceRoot, attestationHash, AegisEscrow.Decision.RELEASE, 9400, sig
+        );
+        vm.expectRevert(AegisEscrow.ZeroSettlementAmount.selector);
+        escrow.recordSettlement(dealId, 1, 0, keccak256("rail"), false);
+        vm.stopPrank();
+    }
+
+    // ── the settlement guard cannot be routed around ────────────────────────
+    /// `recordSettlement` refuses to settle a non-RELEASE without a human.
+    /// `resolveDispute` writes `settledAmountPaise` and `humanApproved` directly,
+    /// and it used to be unlocked by `deal.state == DISPUTED` alone -- which any
+    /// party can set by disputing *a different* milestone.  So a REJECT could be
+    /// settled on chain without the guard ever being consulted.
+    function test_resolveDisputeOnAnUndisputedMilestone_reverts() public {
+        _open(3, uint64(block.timestamp + 7 days));
+        bytes memory rejected = _sign(2, evidenceRoot, attestationHash, AegisEscrow.Decision.REJECT, 1200);
+        vm.prank(operator);
+        escrow.anchorAttestation(
+            dealId, 2, evidenceRoot, attestationHash, AegisEscrow.Decision.REJECT, 1200, rejected
+        );
+        // The guard on the direct path holds.
+        vm.prank(operator);
+        vm.expectRevert(AegisEscrow.DecisionIsNotRelease.selector);
+        escrow.recordSettlement(dealId, 2, 16_800_000, keccak256("rail"), false);
+
+        // A dispute on milestone 1 flips the whole deal to DISPUTED.
+        bytes memory other = _sign(1, evidenceRoot, attestationHash, AegisEscrow.Decision.RELEASE, 9400);
+        vm.prank(operator);
+        escrow.anchorAttestation(
+            dealId, 1, evidenceRoot, attestationHash, AegisEscrow.Decision.RELEASE, 9400, other
+        );
+        vm.prank(buyer);
+        escrow.raiseDispute(dealId, 1);
+        assertEq(uint8(escrow.getDeal(dealId).state), uint8(AegisEscrow.DealState.DISPUTED));
+
+        // Milestone 2 was never disputed, so it cannot be settled this way.
+        vm.prank(operator);
+        vm.expectRevert(AegisEscrow.NotDisputed.selector);
+        escrow.resolveDispute(dealId, 2, 16_800_000, 0, keccak256("human-decision"));
+        assertEq(escrow.getMilestone(dealId, 2).settledAmountPaise, 0);
+        assertFalse(escrow.getMilestone(dealId, 2).humanApproved);
+    }
+
+    /// Resolving clears the milestone's dispute, so a later dispute on a sibling
+    /// milestone cannot be used to resolve this one a second time.
+    function test_resolveDisputeTwice_reverts() public {
+        _open(3, uint64(block.timestamp + 7 days));
+        bytes memory sig1 = _sign(1, evidenceRoot, attestationHash, AegisEscrow.Decision.RELEASE, 9100);
+        bytes memory sig2 = _sign(2, evidenceRoot, attestationHash, AegisEscrow.Decision.RELEASE, 9100);
+        vm.startPrank(operator);
+        escrow.anchorAttestation(
+            dealId, 1, evidenceRoot, attestationHash, AegisEscrow.Decision.RELEASE, 9100, sig1
+        );
+        escrow.anchorAttestation(
+            dealId, 2, evidenceRoot, attestationHash, AegisEscrow.Decision.RELEASE, 9100, sig2
+        );
+        vm.stopPrank();
+
+        vm.prank(buyer);
+        escrow.raiseDispute(dealId, 1);
+        vm.prank(operator);
+        escrow.resolveDispute(dealId, 1, 11_592_000, 1_008_000, keccak256("human-decision"));
+        assertEq(escrow.getMilestone(dealId, 1).settledAmountPaise, 12_600_000);
+
+        vm.prank(seller);
+        escrow.raiseDispute(dealId, 2);
+        vm.prank(operator);
+        vm.expectRevert(AegisEscrow.NotDisputed.selector);
+        escrow.resolveDispute(dealId, 1, 1, 0, keccak256("rewrite"));
+        assertEq(escrow.getMilestone(dealId, 1).settledAmountPaise, 12_600_000);
+    }
+
     // ── fuzz: confidence round-trips for any valid value ────────────────────
     function testFuzz_confidenceRoundTrip(uint16 bps) public {
         bps = uint16(bound(uint256(bps), 0, 10_000));

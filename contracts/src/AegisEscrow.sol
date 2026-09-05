@@ -98,6 +98,8 @@ contract AegisEscrow {
     error SplitDoesNotBalance();
     error InvalidSignature();
     error ZeroTermsHash();
+    error ZeroAttestationHash();
+    error ZeroSettlementAmount();
 
     modifier onlyOperator() {
         if (msg.sender != operator) revert NotOperator();
@@ -187,6 +189,11 @@ contract AegisEscrow {
         if (deal.state != DealState.OPEN && deal.state != DealState.DISPUTED) revert DealNotOpen();
         if (seq == 0 || seq > deal.milestoneCount) revert SeqOutOfRange();
         if (confidenceBps > 10_000) revert SeqOutOfRange();
+        // Zero is the "nothing anchored" sentinel read here and by
+        // recordSettlement.  Accepting one would leave the record still reading
+        // as unanchored, so the same milestone could be anchored a second time
+        // with a different decision and a different attestor.
+        if (attestationHash == bytes32(0)) revert ZeroAttestationHash();
 
         bytes32 key = milestoneKey(dealId, seq);
         if (milestones[key].attestationHash != bytes32(0)) revert AlreadyAnchored();
@@ -219,6 +226,12 @@ contract AegisEscrow {
         Deal storage deal = deals[dealId];
         if (deal.state == DealState.NONE) revert DealNotOpen();
         if (seq == 0 || seq > deal.milestoneCount) revert SeqOutOfRange();
+
+        // Zero is the "not settled" sentinel guarding the line below, so a
+        // zero-amount settlement would record itself and still read as unsettled
+        // -- the milestone could then be settled again and its rail reference
+        // overwritten.  No real payout is zero paise.
+        if (amountPaise == 0) revert ZeroSettlementAmount();
 
         bytes32 key = milestoneKey(dealId, seq);
         MilestoneRecord storage record = milestones[key];
@@ -261,6 +274,13 @@ contract AegisEscrow {
         if (seq == 0 || seq > deal.milestoneCount) revert SeqOutOfRange();
 
         bytes32 key = milestoneKey(dealId, seq);
+        // `deal.state` is per deal but a dispute is raised per milestone.  Without
+        // this check a dispute on milestone 1 unlocked resolveDispute for every
+        // other milestone of the deal -- and resolveDispute writes
+        // settledAmountPaise and humanApproved directly, so a REJECT or an
+        // ESCALATE could be settled without ever meeting recordSettlement's
+        // "a RELEASE, or a human on the record" requirement.
+        if (disputeRaisedAt[key] == 0) revert NotDisputed();
         MilestoneRecord storage record = milestones[key];
         if (record.attestationHash == bytes32(0)) revert NothingAnchored();
 
@@ -272,6 +292,10 @@ contract AegisEscrow {
 
         record.settledAmountPaise = total;
         record.humanApproved = true;
+        // This milestone's dispute is over; re-opening it needs a new
+        // raiseDispute.  Otherwise a later dispute on any sibling milestone would
+        // let this one be resolved a second time.
+        disputeRaisedAt[key] = 0;
         deal.state = DealState.OPEN;
 
         emit DisputeResolved(dealId, seq, releasePaise, refundPaise, decisionHash);

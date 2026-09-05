@@ -40,11 +40,27 @@ const STEP_MS = 420;
 type NodeState = "pending" | "ready" | "degraded" | "failed";
 
 const NODES = [
-  { key: "postgres", glyph: "DB", label: "boot.postgres", required: true },
-  { key: "kafka", glyph: "KF", label: "boot.kafka", required: false },
-  { key: "chain_rpc", glyph: "CH", label: "boot.chain", required: false },
-  { key: "payment_rail", glyph: "RL", label: "boot.rail", required: true },
+  { key: "postgres", required: true },
+  { key: "kafka", required: false },
+  { key: "chain_rpc", required: false },
+  { key: "payment_rail", required: true },
 ] as const;
+
+// The mark, assembling. Four quadrant arcs of the ring, clockwise from the
+// top, one per check, and the joint each arc sets out from.
+const ARCS = [
+  "M 50 10 A 40 40 0 0 1 90 50",
+  "M 90 50 A 40 40 0 0 1 50 90",
+  "M 50 90 A 40 40 0 0 1 10 50",
+  "M 10 50 A 40 40 0 0 1 50 10",
+] as const;
+const JOINTS: readonly (readonly [number, number])[] = [
+  [50, 10],
+  [90, 50],
+  [50, 90],
+  [10, 50],
+];
+const TICK = "M 33 52 L 45 64 L 68 40";
 
 export function Boot({ onDone }: { onDone: () => void }) {
   const { t } = useI18n();
@@ -173,10 +189,6 @@ export function Boot({ onDone }: { onDone: () => void }) {
         ? t("boot.degradedKafka")
         : "";
 
-  // The fill runs centre-to-centre between the first and last station, so a
-  // line that has reached station k is k/3 of the rail, not k/4 of the track.
-  const fill = Math.max(0, reached - 1) / (NODES.length - 1);
-  const travelling = reached > 0 && reached < NODES.length;
   const segment = reduced
     ? { duration: D.fast }
     : { duration: D.slow, ease: E.expo as [number, number, number, number] };
@@ -212,68 +224,64 @@ export function Boot({ onDone }: { onDone: () => void }) {
         <span className="boot-corner boot-corner--tr nano num">
           {String(Math.min(100, counter)).padStart(3, "0")}
         </span>
-        <span className="boot-corner boot-corner--bl nano num">
+        <span className="boot-corner boot-corner--bl nano num" role="status" aria-live="polite">
           {t("boot.label")} · {String(reached).padStart(2, "0")} /{" "}
           {String(NODES.length).padStart(2, "0")}
         </span>
 
         <div className="boot-inner">
+          {/* The mark assembles itself. Four arcs, one per check, each drawn in
+              the colour the check actually reported -- green, amber or red --
+              and the tick once the fourth has landed. It is the same four steps
+              as before with the system names taken off the screen: a loading
+              screen should be beautiful first and a diagnostics panel never,
+              and the note below still says exactly what is degraded. */}
           <motion.svg
-            className="boot-mark"
-            viewBox="0 0 28 28"
+            className="boot-glyph"
+            viewBox="0 0 100 100"
             variants={chipPop}
             initial="hidden"
             animate="show"
             aria-hidden
           >
-            <circle cx="14" cy="14" r="12" fill="none" stroke="var(--bone-100)" strokeWidth="1" />
-            <path
-              d="M8 14 l4 5 l8 -9"
-              fill="none"
-              stroke="var(--bone-100)"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-            />
-          </motion.svg>
-
-          <div className="boot-track" role="status" aria-live="polite">
-            <span className="boot-rail" aria-hidden>
-              {/* Each segment shoots and settles; the head rides the leading
-                  edge and steps aside once the last station is lit. */}
-              <motion.span
-                className="boot-fill"
-                initial={{ scaleX: 0 }}
-                animate={{ scaleX: fill }}
-                transition={segment}
-              />
-              <motion.span
-                className="boot-head"
-                initial={{ left: "0%", opacity: 0 }}
-                animate={{ left: `${fill * 100}%`, opacity: travelling ? 1 : 0 }}
-                transition={segment}
-              />
-            </span>
+            <circle className="boot-halo" cx="50" cy="50" r="46" />
+            <circle className="boot-ring-base" cx="50" cy="50" r="40" />
             {NODES.map((node, index) => {
-              const isReached = reached > index;
+              const lit = reached > index;
+              const state = lit ? nodeState(node.key) : "pending";
+              const [jx, jy] = JOINTS[index] ?? [50, 10];
               return (
-                <motion.span
-                  key={node.key}
-                  className="boot-node"
-                  data-state={isReached ? nodeState(node.key) : "pending"}
-                  data-reached={isReached}
-                  // No per-index stagger: each station pops the moment the
-                  // line reaches it, and the line already carries the rhythm.
-                  custom={0}
-                  variants={chipPop}
-                  initial="hidden"
-                  animate={isReached ? "show" : "hidden"}
-                >
-                  {node.glyph}
-                  <span className="boot-node-label nano">{t(node.label)}</span>
-                </motion.span>
+                <g key={node.key}>
+                  <motion.path
+                    className="boot-arc"
+                    d={ARCS[index] ?? ""}
+                    data-state={state}
+                    initial={{ pathLength: 0 }}
+                    animate={{ pathLength: lit ? 1 : 0 }}
+                    transition={segment}
+                  />
+                  <motion.circle
+                    className="boot-joint"
+                    cx={jx}
+                    cy={jy}
+                    data-state={state}
+                    initial={{ r: 0.01, opacity: 0 }}
+                    animate={lit ? { r: 2.6, opacity: 1 } : { r: 0.01, opacity: 0 }}
+                    transition={segment}
+                  />
+                </g>
               );
             })}
-          </div>
+            <motion.path
+              className="boot-tick"
+              d={TICK}
+              initial={{ pathLength: 0, opacity: 0 }}
+              animate={
+                reached >= NODES.length ? { pathLength: 1, opacity: 1 } : { pathLength: 0, opacity: 0 }
+              }
+              transition={segment}
+            />
+          </motion.svg>
 
           <p className="boot-note micro" style={{ color: halted ? "var(--sig-fail)" : undefined }}>
             {note}
