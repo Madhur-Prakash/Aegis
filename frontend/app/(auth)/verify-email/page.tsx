@@ -14,14 +14,17 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 
 import { useSession } from "@/components/domain/AppProviders";
+import { ScrambleText, SonarArcs } from "@/components/ui/ScrambleText";
 import { Button, Field, Input, Loading } from "@/components/ui/primitives";
 import { ApiError, api } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
 
-const COOLDOWN_S = 30;
+// 60s, per ui/06 §7. Long enough that the button is not a retry loop, short
+// enough that a judge whose mail is slow is not stuck on this screen.
+const COOLDOWN_S = 60;
 
 function VerifyEmailInner() {
-  const { t } = useI18n();
+  const { t, list } = useI18n();
   const router = useRouter();
   const parameters = useSearchParams();
   const { me, refresh } = useSession();
@@ -63,7 +66,18 @@ function VerifyEmailInner() {
       <Link href="/" className="nav-brand" data-cursor="">
         {t("brand")}
       </Link>
-      <h1 className="display-3">{t("auth.verifyTitle")}</h1>
+      {/* The gate is a waiting state, so it wears the sonar and the scramble:
+          the same two motifs as every other place in the product where
+          something has not resolved yet (ui/06 §7). The heading keeps the
+          translated sentence for screen readers via `aria-label` inside
+          ScrambleText; the glyphs themselves are `aria-hidden`. */}
+      <h1 className="display-3 verify-head">
+        <span className="sonar-flank">
+          <SonarArcs side="left" tone="unverified" inline />
+          <ScrambleText phrases={list("auth.verifyPhrases")} />
+          <SonarArcs side="right" tone="unverified" inline />
+        </span>
+      </h1>
 
       {status === "verifying" ? <Loading /> : null}
       {status === "verified" ? (

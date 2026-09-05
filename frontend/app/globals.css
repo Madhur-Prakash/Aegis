@@ -5,6 +5,9 @@
    ───────────────────────────────────────────────────────────────────────── */
 
 @import "../design/tokens.css";
+/* The two families the tokens above name. Must be an @import, and must sit with
+   the others: CSS allows @import only before any rule. */
+@import "./fonts.css";
 
 @tailwind base;
 @tailwind components;
@@ -1528,7 +1531,9 @@
   transform: scaleX(-1) translateY(-50%);
 }
 @media (max-width: 767px) {
-  .sonar {
+  /* No room to flank display type at this width (ui/05 §5). The inline arcs
+     stay: they are 30px and they sit in the flow. */
+  .sonar:not(.sonar--inline) {
     display: none;
   }
 }
@@ -1536,6 +1541,87 @@
 .sonar-arc {
   animation: sonar var(--d-sonar) ease-in-out infinite;
   transform-origin: 50% 50%;
+}
+
+/* Inline arcs: in the flow, flanking a value or a label rather than pinned to
+   the section margins. Same motif, body scale (ui/05 §5 -- the second use). */
+.sonar--inline {
+  position: static;
+  translate: none;
+  width: clamp(20px, 3vw, 30px);
+  flex: none;
+}
+.sonar--inline.sonar--right {
+  transform: scaleX(-1);
+}
+
+/* Arcs · thing · arcs. The pack's composition for the ESCALATE confidence and
+   the awaiting-review empty state: sonar reads as *listening for a decision*. */
+.sonar-flank {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-3);
+}
+
+/* The CTA line's stage: the arcs are absolute, and this is what they are
+   absolute to, so they track the line's own centre rather than the section's. */
+.cta-stage {
+  position: relative;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ── The 404, which is the CTA component reused (ui/06 §7) ──────────────── */
+.notfound {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-5);
+  text-align: center;
+  width: 100%;
+}
+
+/* One step down from the CTA: this line is an explanation, not an invitation,
+   and `NO SUCH DEAL` at the full display-1 size runs off a phone. */
+.notfound-line {
+  font-size: var(--fs-display-2);
+  line-height: var(--lh-display-2);
+  letter-spacing: var(--tr-display-2);
+  margin: 0;
+}
+
+.notfound-body {
+  max-width: 46ch;
+}
+
+/* The verification gate's headline is seventeen slots wide, which overflows the
+   380px auth card at display-3; it sits one step down the scale. */
+.verify-head {
+  font-size: var(--fs-h4);
+  line-height: 1.15;
+  margin: 0;
+}
+
+/* ── Display-scale scramble lines ───────────────────────────────────────── */
+/* Satoshi Black needs the wider slot, and at that slot a long phrase can be
+   wider than the frame: thirteen slots at 1.08em is 14em, which at the
+   display-1 ceiling of 144px is 2021px. So the line takes the display size it
+   is given and steps down only when the slot count would overflow -- the arcs
+   stay put, the line never reflows mid-swap, and a short phrase is still full
+   size. `92vw` leaves room for the flanking arcs. */
+.cta-line,
+.notfound-line {
+  --sc-slot-n: 1.08;
+}
+
+.cta-line .sc-line,
+.notfound-line .sc-line {
+  display: inline-block;
+  font-size: min(1em, calc(92vw / (var(--sc-slots, 13) * var(--sc-slot-n))));
 }
 
 @keyframes sonar {
@@ -1551,9 +1637,27 @@
 }
 
 /* ── Scramble ───────────────────────────────────────────────────────────── */
+/* ── The scramble's fixed slots ──────────────────────────────────────────
+   A slot has to clear the widest glyph the line can hold, or wide letters
+   overlap their neighbours. `--sc-slot-n` is that width in em, measured off the
+   face actually in use rather than guessed:
+
+     JetBrains Mono 500  every glyph 0.600em      -> 0.62em (the pack's value)
+     Satoshi 900         W 1.069, M 0.911, O 0.797 -> 1.08em
+
+   The pack's tuning recipe (compare `ZZZZZ` with `IIIII`) gives 0.59em for
+   Satoshi, which is why 0.62em looked right until the real face was installed:
+   Z is an average glyph and W is nearly twice its width. Measured at the hero's
+   144px, `OPEN A DEAL` overlapped by 24px per pair.
+
+   Mono keeps the pack's number; the display lines override it below. */
+:root {
+  --sc-slot-n: 0.62;
+}
+
 .sc-ch {
   display: inline-block;
-  width: 0.62em; /* fixed slot: the line never reflows while glyphs churn */
+  width: calc(var(--sc-slot-n) * 1em);
   text-align: center;
   transition: opacity var(--d-instant) linear;
   font-variant-ligatures: none;

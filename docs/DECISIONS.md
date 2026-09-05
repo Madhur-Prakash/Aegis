@@ -461,6 +461,44 @@ divergent duration to prove the scale assertion works. The system it protects is
 
 ---
 
+## ADR-011 — The two typefaces are self-hosted under their real names, not through `next/font/local`
+
+<img alt="" src="https://img.shields.io/badge/status-ACCEPTED-4FD1A5?style=flat-square&labelColor=0D0D10">
+<img alt="" src="https://img.shields.io/badge/weight-245_KB,_10_files-C6C0B4?style=flat-square&labelColor=0D0D10">
+
+**Context.** The design pack names two families and is emphatic about one of them: Satoshi is there
+for its Black weight, and *"do not substitute Inter for display; it has no Black weight with this
+presence"*. It also says to self-host via `next/font/local`.
+
+Those two instructions collide with [ADR-010](#adr-010--the-design-tokens-are-copied-verbatim-and-enforced-by-a-build-step).
+`design/tokens.css` is copied **verbatim** and names the families literally:
+
+```css
+--font-display: Satoshi, Inter, system-ui, sans-serif;
+--font-mono:    "JetBrains Mono", ui-monospace, "SF Mono", monospace;
+```
+
+`next/font/local` deliberately emits a *hashed* family name (`__Satoshi_a1b2c3`) and expects the
+CSS variable it generates to be used instead. Those two tokens can never reference it, so wiring
+the fonts that way would have left every rule in the product resolving to `system-ui` — which is
+what it was doing: there was no `@font-face` anywhere, and the entire interface, including the 900
+display type the hero is built on, was rendering in the system sans.
+
+**Decision.** Self-host under the literal family names with plain `@font-face` rules in
+`app/fonts.css`, imported by `globals.css` alongside the tokens. Satoshi 300/500/700/900 from
+Fontshare (ITF Free Font Licence); JetBrains Mono 400/500/700 from Google Fonts (OFL 1.1), Latin and
+Latin-Extended subsets only — the mono face sets labels, ids, hashes and numerals, which stay Latin
+in both locales, so the Cyrillic, Greek and Vietnamese subsets would be ~90 KB nothing here can
+render. The 900 display face and the 500 mono face are `<link rel="preload">`ed; the rest swap in
+behind the fallback stack.
+
+**Consequences.** The property `next/font/local` was wanted for — local, subset, preloaded, no
+render-blocking third-party request — is kept; the code-generation convenience is not. The verbatim
+token stays verbatim, which is the constraint that could not bend. Provenance and refetch commands
+are in `frontend/public/fonts/README.md`.
+
+---
+
 <div align="center">
 
 <sub><b>Aegis</b> · programmable escrow for agentic commerce</sub>

@@ -21,6 +21,7 @@ import { ClauseTable } from "@/components/domain/ClauseTable";
 import { ConfidenceBreakdown } from "@/components/domain/ConfidenceBreakdown";
 import { RaiseDispute } from "@/components/domain/RaiseDispute";
 import { Reveal } from "@/components/ui/Reveal";
+import { SonarArcs } from "@/components/ui/ScrambleText";
 import { CornerMeta, Meta, StateChip } from "@/components/ui/StateChip";
 import { Empty, ErrorBlock, Hash, Loading, Panel, Seal } from "@/components/ui/primitives";
 import { useAsync } from "@/hooks/useAsync";
@@ -95,9 +96,22 @@ export default function VerificationPage() {
             {t(OUTCOME_KEY[record.decision] ?? "verification.escalated")}
           </span>
           <div className="row">
-            <StateChip tone={tone}>
-              {t("verification.confidence")} {fmtConfidence(record.confidence)}
-            </StateChip>
+            {/* An escalation is the machine saying it is still listening, so the
+                confidence wears the sonar -- the same motif as the review
+                queue's empty state, in the same amber. */}
+            {record.decision === "ESCALATE" ? (
+              <span className="sonar-flank">
+                <SonarArcs side="left" tone="unverified" inline />
+                <StateChip tone={tone}>
+                  {t("verification.confidence")} {fmtConfidence(record.confidence)}
+                </StateChip>
+                <SonarArcs side="right" tone="unverified" inline />
+              </span>
+            ) : (
+              <StateChip tone={tone}>
+                {t("verification.confidence")} {fmtConfidence(record.confidence)}
+              </StateChip>
+            )}
             {prechecks.resolved_without_llm ? (
               <StateChip tone="pass" index={1}>
                 {t("verification.zeroCost")}

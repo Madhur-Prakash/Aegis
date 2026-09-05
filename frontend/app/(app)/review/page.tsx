@@ -20,7 +20,7 @@ import { ArbiterPanel } from "@/components/domain/ArbiterPanel";
 import { ReviewDecision } from "@/components/domain/ReviewDecision";
 import { MagicList, type MagicRow } from "@/components/ui/MagicList";
 import { Reveal } from "@/components/ui/Reveal";
-import { ScrambleText } from "@/components/ui/ScrambleText";
+import { ScrambleText, SonarArcs } from "@/components/ui/ScrambleText";
 import { CornerMeta, Meta, StateChip, VerdictChip } from "@/components/ui/StateChip";
 import { Button, Empty, ErrorBlock, Loading, Panel } from "@/components/ui/primitives";
 import { useAsync } from "@/hooks/useAsync";
@@ -116,9 +116,15 @@ export default function ReviewQueuePage() {
             ) : null}
             {state.status === "ready" ? (
               <div className="stack" style={{ gap: "var(--sp-3)", alignItems: "center" }}>
-                <div className="micro">
-                  <ScrambleText phrases={list("review.emptyPhrases")} />
-                </div>
+                {/* Sonar = listening for a decision. Slower than the CTA: there
+                    is nothing to hurry here (ui/05 §7). */}
+                <span className="sonar-flank">
+                  <SonarArcs side="left" tone="unverified" inline />
+                  <span className="micro">
+                    <ScrambleText phrases={list("review.emptyPhrases")} holdMs={4000} />
+                  </span>
+                  <SonarArcs side="right" tone="unverified" inline />
+                </span>
                 <Empty label={t("review.queue")} body={t("review.empty")} />
               </div>
             ) : null}

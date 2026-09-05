@@ -12,8 +12,10 @@
  * *the machine is still not sure*, which is the literal truth of the state.
  */
 
+import { motion } from "motion/react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
+import { D, E, inView } from "@/design/motion";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 
 /** Deliberately the target alphabet plus a few technical marks: it should look
@@ -173,7 +175,16 @@ export function ScrambleGlyphs({
   className?: string;
 }) {
   return (
-    <span className={className} aria-label={target} role="text">
+    /* `--sc-slots` lets the line size itself: a fixed-slot line is
+       `slots x slot-width` wide no matter what it says, so at display scale a
+       thirteen-slot phrase can be wider than the frame. The rule in
+       `globals.css` shrinks the line only when that would happen. */
+    <span
+      className={`sc-line ${className ?? ""}`}
+      style={{ "--sc-slots": width } as React.CSSProperties}
+      aria-label={target}
+      role="text"
+    >
       {chars.map((c, i) => (
         <span
           key={i}
@@ -208,15 +219,35 @@ export function SonarArcs({
   side = "left",
   count = 4,
   tone = "display",
+  inline = false,
 }: {
   side?: "left" | "right";
   count?: number;
   tone?: "display" | "unverified";
+  /**
+   * Flanks something inline -- a confidence value, an empty-state label --
+   * rather than the full-bleed CTA. The arcs then sit in the flow at a size
+   * that reads beside body-scale type, instead of being pinned to the section's
+   * left and right margins.
+   */
+  inline?: boolean;
 }) {
   const reduced = useReducedMotion();
   const stroke = tone === "unverified" ? "var(--sig-unverified)" : "var(--fg-display)";
   return (
-    <svg className={`sonar sonar--${side}`} viewBox="0 0 60 160" fill="none" aria-hidden>
+    /* The arcs fade in with the section and then breathe (ui/05 §6, t=240ms).
+       The svg's own opacity is free to animate: the pulse animates each path's
+       opacity, not the element's. */
+    <motion.svg
+      className={`sonar sonar--${side} ${inline ? "sonar--inline" : ""}`}
+      viewBox="0 0 60 160"
+      fill="none"
+      aria-hidden
+      initial={reduced ? false : { opacity: 0 }}
+      whileInView={{ opacity: 1 }}
+      viewport={inView}
+      transition={{ duration: D.reveal, ease: E.enter as [number, number, number, number] }}
+    >
       {Array.from({ length: count }).map((_, i) => {
         const r = 26 + i * 15;
         const x = 58 - i * 14;
@@ -236,6 +267,6 @@ export function SonarArcs({
           />
         );
       })}
-    </svg>
+    </motion.svg>
   );
 }

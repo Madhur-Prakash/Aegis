@@ -300,7 +300,10 @@
     "organizationHint": "वैकल्पिक। डिफ़ॉल्ट आपका नाम।",
     "passwordHint": "कम से कम 6 अक्षर।",
     "resetDone": "पासवर्ड बदल गया।",
-    "resetRevokes": "बाक़ी सब सेशन साइन आउट हो गए।"
+    "resetRevokes": "बाक़ी सब सेशन साइन आउट हो गए।",
+    "verifyPhrases": [
+      "VERIFY YOUR EMAIL"
+    ]
   },
   "settings": {
     "title": "सेटिंग्स",
@@ -386,7 +389,12 @@
     "realTestMode": "REAL TEST MODE",
     "railMode": "RAIL",
     "aiProvider": "AI",
-    "reducedMotion": "कम मोशन चालू है।"
+    "reducedMotion": "कम मोशन चालू है।",
+    "notFoundPhrases": [
+      "NOT FOUND",
+      "NO SUCH DEAL"
+    ],
+    "notFoundBody": "यहाँ ऐसा कुछ नहीं है जो आप देख सकें। अगर आप किसी सौदे के लिंक से आए हैं, तो वह किसी दूसरी संस्था का हो सकता है।"
   },
   "console": {
     "empty": "इस सौदे पर अबतक कुछ नहीं हुआ। बहीखाते में दर्ज होते ही इवेंट यहाँ दिखेंगे।"

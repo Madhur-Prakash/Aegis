@@ -52,8 +52,13 @@ bootstrap: ensure-env ## Install backend, frontend and contract dependencies
 #  and is a no-op on every later run: regenerating it on each `make up` would
 #  sign every user out.  `up` and `up-build` both depend on it, so there is no
 #  path through the documented quick start that boots on the published default.
+#  Node, not sh: GNU Make on Windows cannot resolve `SHELL := /bin/sh` without a
+#  POSIX layer on PATH and falls back to cmd.exe, where `sh` does not exist -- so
+#  a shell recipe here broke `make up` from PowerShell before it reached Docker.
+#  `node <file>` is one command with no metacharacters and no quoting, identical
+#  under cmd.exe, PowerShell and sh.
 ensure-env: ## Create .env if absent and replace placeholder secrets with real entropy
-	@sh scripts/ensure-env.sh
+	@node scripts/ensure-env.mjs
 
 # ── Containers ──────────────────────────────────────────────────────────────
 up: ensure-env ## Start every service and wait for it to be healthy

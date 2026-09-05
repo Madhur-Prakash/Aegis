@@ -54,6 +54,23 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        {/* The two faces that paint first: the 900 display weight the hero is
+            set in, and the 500 mono every micro-label and numeral uses. The
+            other eight faces swap in behind the fallback stack. */}
+        <link
+          rel="preload"
+          href="/fonts/satoshi-900.woff2"
+          as="font"
+          type="font/woff2"
+          crossOrigin="anonymous"
+        />
+        <link
+          rel="preload"
+          href="/fonts/jetbrainsmono-500-latin.woff2"
+          as="font"
+          type="font/woff2"
+          crossOrigin="anonymous"
+        />
         <script dangerouslySetInnerHTML={{ __html: NO_FLASH }} />
       </head>
       <body>

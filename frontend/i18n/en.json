@@ -300,7 +300,10 @@
     "organizationHint": "Optional. Defaults to your own name.",
     "passwordHint": "At least 6 characters.",
     "resetDone": "Password changed. Sign in with the new one.",
-    "resetRevokes": "Every other session is signed out."
+    "resetRevokes": "Every other session is signed out.",
+    "verifyPhrases": [
+      "VERIFY YOUR EMAIL"
+    ]
   },
   "settings": {
     "title": "Settings",
@@ -386,7 +389,12 @@
     "realTestMode": "REAL TEST MODE",
     "railMode": "RAIL",
     "aiProvider": "AI",
-    "reducedMotion": "Reduced motion is on."
+    "reducedMotion": "Reduced motion is on.",
+    "notFoundPhrases": [
+      "NOT FOUND",
+      "NO SUCH DEAL"
+    ],
+    "notFoundBody": "There is nothing here that you can see. If you followed a link to a deal, it may belong to another organization."
   },
   "console": {
     "empty": "Nothing has happened on this deal yet. Events appear here as they are written to the ledger."

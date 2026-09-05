@@ -67,7 +67,7 @@ make demo         # drives the seeded deal through every branch
 ### Secrets are filled before anything starts
 
 `up` and `up-build` both depend on `ensure-env`, which runs
-[`scripts/ensure-env.sh`](../scripts/ensure-env.sh): it creates `.env` from `.env.example` if it is
+[`scripts/ensure-env.mjs`](../scripts/ensure-env.mjs): it creates `.env` from `.env.example` if it is
 missing, then replaces any **placeholder** secret with 32 bytes of real entropy.
 
 ```

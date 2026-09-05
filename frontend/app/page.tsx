@@ -36,7 +36,7 @@ import {
 } from "@/components/ui/editorial";
 import { InvertOnHover } from "@/components/ui/InvertOnHover";
 import { BlurLines, FlipHeadline, Lattice, Reveal } from "@/components/ui/Reveal";
-import { ScrambleGlyphs, useScramble } from "@/components/ui/ScrambleText";
+import { ScrambleGlyphs, SonarArcs, useScramble } from "@/components/ui/ScrambleText";
 import { Button, Capsule, CountUp } from "@/components/ui/primitives";
 import { chipPop, D, E, pick, stagger, ST } from "@/design/motion";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
@@ -582,11 +582,18 @@ export default function LandingPage() {
         <p className="micro cta-meta" {...ctaPeers.peer("label")}>
           {t("cta.label")}
         </p>
-        <InvertOnHover>
-          <div className="cta-line" {...ctaPeers.peer("line")}>
-            <ScrambleGlyphs {...scramble} />
-          </div>
-        </InvertOnHover>
+        {/* Four nested arcs per side, mirrored, breathing on a stagger. The
+            reference frames the cycling phrase between them, and the motif is
+            reused for the two "listening for a decision" states elsewhere. */}
+        <div className="cta-stage">
+          <SonarArcs side="left" />
+          <InvertOnHover>
+            <div className="cta-line" {...ctaPeers.peer("line")}>
+              <ScrambleGlyphs {...scramble} />
+            </div>
+          </InvertOnHover>
+          <SonarArcs side="right" />
+        </div>
         <Link href={status === "signed-in" ? "/deals" : "/register"} data-cursor="">
           <Button>{t("cta.start")}</Button>
         </Link>
